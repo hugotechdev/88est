@@ -63,6 +63,9 @@ function isEmail(e) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e || ''));
 }
 
+// Toleo la Terms and Conditions (public/terms.html). Ukibadilisha masharti, badilisha hapa ili wauzaji wakubali upya.
+const TERMS_VERSION = '2026-11-17.2';
+
 function isAdmin(u) {
   return !!u && (u.role === 'admin' || u.role === 'superadmin');
 }
@@ -107,6 +110,8 @@ function selfUser(u) {
     lng: u.lng,
     plan: u.plan,
     pro_until: u.pro_until,
+    terms_accepted: isAdmin(u) || u.terms_version === TERMS_VERSION,
+    marketing_ok: !!u.marketing_ok,
     status: u.status,
   };
 }
@@ -201,7 +206,7 @@ function esc(s) {
 }
 
 module.exports = {
-  CATEGORIES, DEALS, PERIODS, ACCOUNT_TYPES, AMENITIES, REPORT_REASONS,
+  CATEGORIES, DEALS, PERIODS, ACCOUNT_TYPES, AMENITIES, REPORT_REASONS, TERMS_VERSION,
   normPhone, slugify, uniqueSlug, str, int, num, bool, need, isEmail, isPro, isAdmin,
   publicSeller, selfUser, sendEmail, rateLimit, clientIp, esc, verifyCaptcha,
 };

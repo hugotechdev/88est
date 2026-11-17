@@ -13,6 +13,20 @@ async function limits(user) {
   return { max, used: Number(r.n) };
 }
 
+// Hali ya tangazo jipya kulingana na mipangilio ya ukaguzi:
+// none = hewani mara moja, first = tangazo la kwanza la muuzaji mpya asiye Verified linakaguliwa, all = kila tangazo
+async function initialStatus(user) {
+  if (U.isAdmin(user)) return 'approved';
+  const mode = (await db.getSettings()).review_mode || 'none';
+  if (mode === 'all') return 'pending';
+  if (mode === 'first') {
+    if (user.verify_level > 0) return 'approved';
+    const r = await db.one("SELECT count(*) AS n FROM listings WHERE user_id = $1 AND status IN ('approved', 'taken')", [user.id]);
+    return Number(r.n) > 0 ? 'approved' : 'pending';
+  }
+  return 'approved';
+}
+
 async function meResponse(u) {
   const lim = await limits(u);
   const pendingVer = await db.one("SELECT id FROM verifications WHERE user_id = $1 AND status = 'pending' LIMIT 1", [u.id]);
@@ -105,6 +119,7 @@ module.exports = function (app) {
     const email = U.str(b.email, 120);
     U.need(U.isEmail(email), 'Email si sahihi');
     U.need(String(b.password || '').length >= 6, 'Password iwe na herufi 6 au zaidi');
+    U.need(U.bool(b.accept_terms), 'Kubali Terms and Conditions na Privacy Policy ili kufungua akaunti');
     U.need(U.str(b.region), 'Chagua mkoa unaopatikana');
     U.need(U.str(b.district), 'Chagua wilaya unayopatikana');
     const exists = await db.one('SELECT id FROM users WHERE phone = $1', [phone]);
@@ -114,10 +129,10 @@ module.exports = function (app) {
     const slug = await U.uniqueSlug(db, businessName || name);
 
     const u = await db.one(
-      `INSERT INTO users(role, account_type, name, business_name, slug, phone, email, password_hash, whatsapp, region, district, ward, service_areas)
-       VALUES ('seller', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      `INSERT INTO users(role, account_type, name, business_name, slug, phone, email, password_hash, whatsapp, region, district, ward, service_areas, terms_accepted_at, terms_version, marketing_ok)
+       VALUES ('seller', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now(), $13, $14) RETURNING *`,
       [b.account_type, name, businessName, slug, phone, email.toLowerCase(), hashPassword(b.password), whatsapp,
-        U.str(b.region, 60), U.str(b.district, 60), U.str(b.ward, 80), U.str(b.service_areas, 300)]
+        U.str(b.region, 60), U.str(b.district, 60), U.str(b.ward, 80), U.str(b.service_areas, 300), U.TERMS_VERSION, !!U.bool(b.marketing_ok)]
     );
     let emailSent = false;
     try { emailSent = await sendOtp(u); } catch (e) { /* si tatizo */ }
@@ -215,6 +230,14 @@ module.exports = function (app) {
     res.json(await meResponse(nu));
   });
 
+  // Kukubali Terms and Conditions (kwa waliopo, au toleo jipya likitoka)
+  app.post('/api/me/accept-terms', requireAuth, async (req, res) => {
+    U.need(U.bool(req.body.accept), 'Weka tiki kukubali masharti');
+    const mk = req.body.marketing_ok === undefined ? req.user.marketing_ok : !!U.bool(req.body.marketing_ok);
+    const nu = await db.one('UPDATE users SET terms_accepted_at = now(), terms_version = $1, marketing_ok = $2 WHERE id = $3 RETURNING *', [U.TERMS_VERSION, mk, req.user.id]);
+    res.json(await meResponse(nu));
+  });
+
   app.post('/api/me/password', requireAuth, async (req, res) => {
     U.need(checkPassword(req.body.old || '', req.user.password_hash), 'Password ya zamani si sahihi');
     U.need(String(req.body.new || '').length >= 6, 'Password mpya iwe na herufi 6 au zaidi');
@@ -268,11 +291,12 @@ module.exports = function (app) {
   });
 
   app.post('/api/my/listings', requireAuth, async (req, res) => {
+    U.need(U.isAdmin(req.user) || req.user.terms_version === U.TERMS_VERSION, 'Kubali Terms and Conditions kwanza');
     const lim = await limits(req.user);
     U.need(lim.used < lim.max, `Umefikia kikomo cha matangazo ${lim.max}. Jiunge na Pro au ondoa matangazo yaliyokwisha.`);
     const d = await listingFromBody(req.body, req.user);
     const cols = LISTING_COLS.concat(['user_id', 'status']);
-    const vals = LISTING_COLS.map((c) => d[c]).concat([req.user.id, U.isAdmin(req.user) ? 'approved' : 'pending']);
+    const vals = LISTING_COLS.map((c) => d[c]).concat([req.user.id, await initialStatus(req.user)]);
     const ph = cols.map((c, i) => '$' + (i + 1) + (c === 'amenities' || c === 'photos' ? '::jsonb' : ''));
     const l = await db.one(`INSERT INTO listings(${cols.join(', ')}) VALUES (${ph.join(', ')}) RETURNING *`, vals);
     res.json(myListingRow(l));
@@ -284,9 +308,9 @@ module.exports = function (app) {
     if (!old) throw httpError(404, 'Tangazo halipatikani');
     const d = await listingFromBody(req.body, req.user);
     const sets = LISTING_COLS.map((c, i) => `${c} = $${i + 1}${c === 'amenities' || c === 'photos' ? '::jsonb' : ''}`);
-    // Tangazo lililobadilishwa linakaguliwa upya (isipokuwa la admin au lililokwisha)
+    // Tangazo lililobadilishwa linafuata mipangilio ya ukaguzi
     let status = old.status;
-    if (!U.isAdmin(req.user) && ['approved', 'rejected'].includes(old.status)) status = 'pending';
+    if (['approved', 'rejected', 'pending'].includes(old.status)) status = await initialStatus(req.user);
     const vals = LISTING_COLS.map((c) => d[c]).concat([status, id]);
     const l = await db.one(
       `UPDATE listings SET ${sets.join(', ')}, status = $${LISTING_COLS.length + 1}, reject_reason = NULL, updated_at = now() WHERE id = $${LISTING_COLS.length + 2} RETURNING *`,
@@ -305,7 +329,7 @@ module.exports = function (app) {
       U.need(l.status === 'taken', 'Tangazo hili halijawekwa kama limechukuliwa');
       const lim = await limits(req.user);
       U.need(lim.used < lim.max, `Umefikia kikomo cha matangazo ${lim.max}.`);
-      await db.q(`UPDATE listings SET status = $1, updated_at = now() WHERE id = $2`, [U.isAdmin(req.user) ? 'approved' : 'pending', id]);
+      await db.q(`UPDATE listings SET status = $1, updated_at = now() WHERE id = $2`, [await initialStatus(req.user), id]);
     } else {
       throw httpError(400, 'Hali si sahihi');
     }

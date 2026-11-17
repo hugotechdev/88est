@@ -309,6 +309,7 @@ module.exports = function (app) {
     for (const k of keys) {
       if (req.body[k] === undefined) continue;
       const v = U.str(req.body[k], k === 'agent_faq' ? 6000 : 2000);
+      if (k === 'review_mode') U.need(['none', 'first', 'all'].includes(v), 'Chaguo la ukaguzi si sahihi');
       if (['free_limit', 'pro_limit', 'pro_price_month', 'featured_price_week', 'agent_daily_limit'].includes(k)) {
         U.need(v !== null && /^\d+$/.test(v), 'Thamani ya ' + k + ' iwe namba');
       }

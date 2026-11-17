@@ -47,6 +47,10 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_version TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS marketing_ok BOOLEAN NOT NULL DEFAULT false;
+
 CREATE TABLE IF NOT EXISTS images (
   id SERIAL PRIMARY KEY,
   owner_id INTEGER,
@@ -180,6 +184,7 @@ const DEFAULT_SETTINGS = {
   featured_price_week: '10000',
   support_phone: '255785799530',
   support_email: 'info@hugotech.co.tz',
+  review_mode: 'none',
   agent_enabled: '1',
   agent_ai_enabled: '1',
   agent_daily_limit: '20',

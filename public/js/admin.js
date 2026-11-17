@@ -124,7 +124,7 @@
   async function listings(params) {
     const main = await shell('/listings');
     if (!main) return;
-    const status = params.status !== undefined ? params.status : 'pending';
+    const status = params.status !== undefined ? params.status : (S.stats.pending ? 'pending' : 'approved');
     main.innerHTML = `<h1>Matangazo</h1>
       <div class="pill-tabs" id="st">${[['pending', 'Yanasubiri'], ['approved', 'Hewani'], ['rejected', 'Yamekataliwa'], ['hidden', 'Yamefichwa'], ['taken', 'Yamechukuliwa'], ['', 'Yote']].map(([k, t]) => `<button class="${status === k ? 'on' : ''}" data-s="${k}">${t}</button>`).join('')}</div>
       <div class="filters"><input class="input" id="q" placeholder="Tafuta kichwa, muuzaji, simu, mtaa" value="${esc(params.q || '')}"></div>
@@ -471,6 +471,12 @@
     const s = await E.api('/api/admin/settings');
     const f = (k, label, hint = '', type = 'input') => `<div class="field"><label>${label}</label>${type === 'textarea' ? `<textarea class="input" name="${k}">${esc(s[k] || '')}</textarea>` : `<input class="input" name="${k}" value="${esc(s[k] || '')}">`}${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
     sb.innerHTML = `<form id="sf" class="form-sec">
+      <div class="field"><label>Ukaguzi wa matangazo</label>
+        <select class="input" name="review_mode">
+          <option value="none" ${(s.review_mode || 'none') === 'none' ? 'selected' : ''}>Bila ukaguzi: yanaenda hewani mara moja</option>
+          <option value="first" ${s.review_mode === 'first' ? 'selected' : ''}>Tangazo la kwanza la muuzaji mpya (asiye Verified) tu</option>
+          <option value="all" ${s.review_mode === 'all' ? 'selected' : ''}>Kila tangazo likaguliwe</option>
+        </select><div class="hint">Ripoti 3 za wateja zinaficha tangazo lenye shaka kwa njia zote.</div></div>
       <div class="grid2">${f('free_limit', 'Matangazo ya bure (idadi)')}${f('pro_limit', 'Matangazo ya Pro (idadi)')}</div>
       <div class="grid2">${f('pro_price_month', 'Bei ya Pro kwa mwezi (TZS)')}${f('featured_price_week', 'Bei ya tangazo maalum kwa wiki (TZS)')}</div>
       <div class="grid2">${f('support_phone', 'Namba ya msaada', 'Mfumo: 255XXXXXXXXX')}${f('support_email', 'Email ya msaada')}</div>

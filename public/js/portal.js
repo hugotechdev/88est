@@ -79,7 +79,10 @@
           <div class="field"><label>Kata / Mtaa</label><input class="input" name="ward" placeholder="Mfano: Sinza"></div>
           <div class="field"><label>Maeneo unayofanyia kazi</label><input class="input" name="service_areas" placeholder="Mfano: Kinondoni, Ubungo, Kigamboni"></div>
           <div class="field"><label>Password *</label><input class="input" name="password" type="password" minlength="6" required autocomplete="new-password"><div class="hint">Angalau herufi 6</div></div>
-          <p class="tiny muted">Unakubali kuweka matangazo ya kweli tu, na unawajibika kwa matangazo yako.</p>
+          <label class="check" style="margin-bottom:8px;align-items:flex-start"><input type="checkbox" name="accept_terms" value="true" required style="margin-top:2px">
+            <span class="small">Nimesoma na nakubali <a href="/terms.html" target="_blank" style="color:var(--gold-d);font-weight:600;text-decoration:underline">Terms and Conditions</a> na <a href="/privacy.html" target="_blank" style="color:var(--gold-d);font-weight:600;text-decoration:underline">Privacy Policy</a>, na kupokea ujumbe wa akaunti kwa email, SMS na WhatsApp.</span></label>
+          <label class="check" style="margin-bottom:12px;align-items:flex-start"><input type="checkbox" name="marketing_ok" value="true" style="margin-top:2px">
+            <span class="small">Nitumie habari na ofa za 88EST (si lazima).</span></label>
           <div id="capR"></div>
           <button class="btn btn-gold btn-block">Fungua akaunti</button>
         </form>`;
@@ -180,6 +183,43 @@
         location.hash = '#/';
       } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
     };
+  }
+
+  // ===== Kukubali Terms and Conditions =====
+  function termsGate() {
+    document.title = 'Terms and Conditions | 88EST';
+    root.innerHTML = `
+      <div class="auth-wrap">
+        <div style="width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center"><a href="/">${E.logo(true)}</a>${E.langButton('dark')}</div>
+        <div class="auth-card" style="max-width:560px">
+          <h2>Terms and Conditions</h2>
+          <p class="small muted">Ili kuendelea kutumia akaunti yako, soma na ukubali masharti mapya ya 88EST.</p>
+          <ul class="small" style="padding-left:18px;line-height:1.7">
+            <li>88EST inaunganisha wateja na wauzaji tu; si mhusika kwenye makubaliano au malipo.</li>
+            <li>Weka matangazo ya kweli, ya mali uliyo na ruhusa ya kuitangaza.</li>
+            <li>Usimwombe mteja malipo yoyote kabla ya kukutana naye na kumwonyesha mali.</li>
+            <li>Matangazo ya uongo au utapeli yanaweza kusababisha akaunti kufungiwa bila kurudishiwa ada.</li>
+            <li>88EST haithibitishi umiliki wa kila mali; kila mtumiaji afanye uchunguzi wake mwenyewe.</li>
+          </ul>
+          <div class="row gap"><a href="/terms.html" target="_blank" class="btn btn-ghost grow"><i class="ti ti-file-text"></i> Terms</a><a href="/privacy.html" target="_blank" class="btn btn-ghost grow"><i class="ti ti-lock"></i> Privacy Policy</a></div>
+          <form id="tg" class="mt">
+            <label class="check" style="align-items:flex-start"><input type="checkbox" name="accept" value="true" required style="margin-top:2px">
+              <span class="small">I have read and accept the 88EST Terms and Conditions and Privacy Policy, and agree to receive account messages by email, SMS and WhatsApp.</span></label>
+            <label class="check mt-s" style="align-items:flex-start"><input type="checkbox" name="marketing_ok" value="true" ${S.me.marketing_ok ? 'checked' : ''} style="margin-top:2px">
+              <span class="small">Send me 88EST news and offers (optional).</span></label>
+            <button class="btn btn-gold btn-block mt">Kubali na endelea</button>
+          </form>
+          <p class="small center mt"><a href="#" id="tgOut" style="color:var(--grey)">Toka</a></p>
+        </div>
+      </div>`;
+    $('#tg').onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      E.busy(btn, true);
+      try { setMe(await E.api('/api/me/accept-terms', { body: { accept: true, marketing_ok: !!e.target.marketing_ok.checked } })); route(); }
+      catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
+    };
+    $('#tgOut').onclick = (e) => { e.preventDefault(); logout(); };
   }
 
   // ===== Muundo wa portal =====
@@ -314,7 +354,7 @@
           E.toast('Tangazo limefutwa', 'ok');
         } else {
           await E.api('/api/my/listings/' + id + '/status', { body: { status: act } });
-          E.toast(act === 'taken' ? 'Limewekwa kama limechukuliwa' : 'Limetumwa kwa ukaguzi', 'ok');
+          E.toast(act === 'taken' ? 'Limewekwa kama limechukuliwa' : 'Limerudishwa', 'ok');
         }
         await loadMe();
         myListings();
@@ -325,6 +365,8 @@
   // ===== Fomu ya tangazo =====
   async function listingForm(id) {
     const main = shell(id ? '/listings' : '/new');
+    const cfg = await E.config();
+    const review = cfg.review_mode || 'none';
     let l = { category: '', deal: 'rent', price_period: 'month', region: S.me.region || 'Dar es Salaam', district: S.me.district || '', ward: S.me.ward || '', amenities: [], photos: [] };
     if (id) {
       main.innerHTML = '<div class="empty"><span class="spin"></span></div>';
@@ -339,7 +381,7 @@
 
     main.innerHTML = `
       <h1>${id ? 'Hariri tangazo' : 'Weka tangazo jipya'}</h1>
-      ${id && l.status === 'approved' ? '<div class="alert alert-gold"><i class="ti ti-info-circle"></i><div class="small">Mabadiliko yatakaguliwa kabla ya kurudi hewani.</div></div>' : ''}
+      ${id && l.status === 'approved' && review === 'all' ? '<div class="alert alert-gold"><i class="ti ti-info-circle"></i><div class="small">Mabadiliko yatakaguliwa kabla ya kurudi hewani.</div></div>' : ''}
       <form id="lf" novalidate>
         <div class="form-sec"><h3><span class="n">1</span> Aina ya mali</h3>
           <div class="cat-pick">${E.CATS.map((c) => `<label><input type="radio" name="category" value="${c.k}" ${l.category === c.k ? 'checked' : ''}><i class="ti ${c.icon}"></i>${c.label}</label>`).join('')}</div>
@@ -409,8 +451,7 @@
             <div class="check-grid">${Object.entries(E.AMEN).map(([k, [t, i]]) => `<label class="check" data-am="${k}"><input type="checkbox" name="amenities" value="${k}" ${(l.amenities || []).includes(k) ? 'checked' : ''}><i class="ti ${i}"></i>${t}</label>`).join('')}</div></div>
         </div>
 
-        <div class="sticky-save"><button class="btn btn-gold btn-block" id="saveBtn"><i class="ti ti-send"></i> ${id ? 'Hifadhi mabadiliko' : 'Tuma kwa ukaguzi'}</button>
-          <p class="tiny muted center" style="margin:6px 0 0">Litaonekana baada ya kukaguliwa.</p></div>
+        <div class="sticky-save"><button class="btn btn-gold btn-block" id="saveBtn"><i class="ti ti-send"></i> ${id ? 'Hifadhi mabadiliko' : 'Weka tangazo'}</button></div>
       </form>`;
 
     const form = $('#lf');
@@ -506,9 +547,9 @@
       const btn = $('#saveBtn');
       E.busy(btn, true, 'Inahifadhi...');
       try {
-        await E.api(id ? '/api/my/listings/' + id : '/api/my/listings', { method: id ? 'PUT' : 'POST', body: d });
+        const saved = await E.api(id ? '/api/my/listings/' + id : '/api/my/listings', { method: id ? 'PUT' : 'POST', body: d });
         await loadMe();
-        E.toast(id ? 'Mabadiliko yamehifadhiwa' : 'Tangazo limetumwa kwa ukaguzi', 'ok');
+        E.toast(saved.status === 'approved' ? 'Tangazo liko hewani' : 'Limetumwa; litaonekana baada ya kukaguliwa', 'ok');
         location.hash = '#/listings';
       } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
     };
@@ -624,7 +665,7 @@
         <div class="field"><label>Selfie yako ukiwa umeshika kitambulisho *</label><div class="upl" data-k="selfie_image"><i class="ti ti-camera-selfie"></i><span class="small">Gusa kupiga selfie</span></div></div>
         <div class="field"><label>Leseni ya biashara (kwa kampuni)</label><div class="upl" data-k="license_image"><i class="ti ti-file-certificate"></i><span class="small">Si lazima</span></div></div>
         <div class="field"><label>Namba ya TIN</label><input class="input" name="tin" placeholder="Si lazima"></div>
-        <p class="tiny muted"><i class="ti ti-lock"></i> Zinaonwa na admin wa 88EST tu.</p>
+        <p class="tiny muted"><i class="ti ti-lock"></i> Zinaonwa na admin wa 88EST tu. <a href="/privacy.html" target="_blank" style="text-decoration:underline">Privacy Policy</a></p>
         <button class="btn btn-gold btn-block" id="vSend">Tuma kwa ukaguzi</button>
         <input type="file" id="vIn" accept="image/*" hidden>
       </form>`;
@@ -721,6 +762,7 @@
     }
     window.scrollTo(0, 0);
     E.closeModal();
+    if (!S.me.terms_accepted && !IMP) return termsGate();
     const m = h.match(/^\/edit\/(\d+)/);
     if (m) return listingForm(m[1]);
     if (h === '/listings') return myListings();

@@ -107,6 +107,7 @@ module.exports = function (app) {
       free_limit: Number(s.free_limit),
       pro_limit: Number(s.pro_limit),
       pay_instructions: s.pay_instructions,
+      review_mode: s.review_mode || 'none',
       turnstile_site_key: process.env.TURNSTILE_SECRET_KEY ? process.env.TURNSTILE_SITE_KEY || '' : '',
     });
   });

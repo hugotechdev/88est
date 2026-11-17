@@ -187,7 +187,7 @@
       <div id="gridBox">${skelGrid()}</div>
       <div class="center" style="padding:8px 18px"><button class="btn btn-ghost glass hide" id="more">Pakia zaidi</button></div>
       ${installBar()}
-      <div class="footer-note">88EST · HUGO TECH</div>`;
+      <div class="footer-note">88EST · HUGO TECH · <a href="/terms.html" style="text-decoration:underline">Terms</a> · <a href="/privacy.html" style="text-decoration:underline">Privacy</a></div>`;
 
     $('#openSearch').onclick = () => searchPanel({});
     $('#cats').onclick = (e) => { const b = e.target.closest('[data-cat]'); if (b) { S.category = b.dataset.cat; home(); } };
@@ -417,13 +417,14 @@
           <a class="msg" href="${waUrl}" target="_blank" rel="noopener" data-lead="wa">Ujumbe</a>
         </div>
 
+        <div class="safe-line"><i class="ti ti-shield-check"></i> Usilipe kabla ya kukutana na muuzaji na kuiona mali.</div>
         ${l.amenities.length ? `<div class="d-sec"><h3>Huduma zilizopo</h3><div class="amen">${l.amenities.map((a) => E.AMEN[a] ? `<div><i class="ti ${E.AMEN[a][1]}"></i>${esc(E.AMEN[a][0])}</div>` : '').join('')}</div></div>` : ''}
         ${l.description ? `<div class="d-sec"><h3>Maelezo</h3><div class="desc">${esc(l.description)}</div></div>` : ''}
         <div class="d-sec"><h3>Taarifa muhimu</h3><div class="kvbox">${kv.map(([k, v]) => `<div class="kv"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')}</div></div>
         ${l.payment_plan ? `<div class="d-sec"><h3>Mpango wa malipo</h3><div class="desc">${esc(l.payment_plan)}</div></div>` : ''}
         ${l.lat ? `<div class="d-sec"><h3>Mahali</h3><div class="map" id="lmap" style="border-radius:20px"></div><p class="muted tiny mt-s">Eneo la kukadiria.</p></div>` : ''}
         <div class="d-sec">
-          <div class="safe small"><i class="ti ti-shield-check gold"></i> Usitume pesa kabla ya kuona mali.</div>
+          <div class="safe-warn"><i class="ti ti-alert-triangle"></i><div><b>Usilipe chochote kabla ya kukutana na muuzaji na kuiona mali.</b><div class="small">Hakikisha mmiliki na nyaraka zake. Ukilipa kabla ya hapo ni kwa hatari yako mwenyewe. <a href="/terms.html" target="_blank">Masharti</a></div></div></div>
           <div class="row between mt"><span class="muted tiny">#${l.id} · ${E.timeAgo(l.created_at)} · ${l.views} wameona</span>
           <button class="report-link" id="report"><i class="ti ti-flag"></i> Ripoti</button></div>
         </div>
@@ -448,8 +449,11 @@
         $('#gcount').textContent = i + ' / ' + photos.length;
       }, { passive: true });
     }
-    sheetInner.querySelectorAll('[data-lead]').forEach((a) => a.addEventListener('click', () => {
-      fetch('/api/listings/' + l.id + '/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: a.dataset.lead }), keepalive: true }).catch(() => {});
+    sheetInner.querySelectorAll('[data-lead]').forEach((a) => a.addEventListener('click', (e) => {
+      const track = () => fetch('/api/listings/' + l.id + '/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: a.dataset.lead }), keepalive: true }).catch(() => {});
+      if (safetyOk()) return track();
+      e.preventDefault();
+      safetyModal(a, track);
     }));
     $('#share').onclick = () => share(l.title, location.origin + '/l/' + l.id);
     $('#report').onclick = () => reportModal(l.id);
@@ -469,6 +473,31 @@
       }
     }).catch(() => {});
   }
+
+  // Onyo la usalama kabla ya kuwasiliana na muuzaji (mara moja kwa kila ziara)
+  const safetyOk = () => sessionStorage.getItem('est_safe_ok') === '1';
+  function safetyModal(link, after) {
+    const m = E.modal(`<div class="center"><div class="safe-ic"><i class="ti ti-shield-exclamation"></i></div>
+      <h2>Kabla hujawasiliana</h2></div>
+      <ul class="safe-list">
+        <li><b>Usilipe chochote</b> (amana, booking, ada ya kuona) kabla ya kukutana na muuzaji na kuiona mali kwa macho yako.</li>
+        <li>Hakikisha mmiliki halisi na nyaraka (hati, mkataba) kwenye mamlaka husika kabla ya kulipa. 88EST haithibitishi umiliki wa kila mali.</li>
+        <li>Kutana mahali salama, mchana, ukiwa na mtu unayemwamini.</li>
+      </ul>
+      <p class="small muted">88EST inaunganisha wateja na wauzaji tu, na si mhusika kwenye malipo. Ukilipa kabla ya kukutana na muuzaji ni kwa hatari yako mwenyewe. <a href="/terms.html" target="_blank" style="text-decoration:underline">Terms and Conditions</a></p>
+      <button class="btn btn-gold btn-block" id="safeOk">Nimeelewa, endelea</button>`);
+    m.querySelector('#safeOk').onclick = () => {
+      sessionStorage.setItem('est_safe_ok', '1');
+      E.closeModal();
+      if (after) after();
+      if (link.target === '_blank') window.open(link.href, '_blank', 'noopener');
+      else location.href = link.href;
+    };
+  }
+  document.addEventListener('click', (e) => {
+    const g = e.target.closest('[data-guard]');
+    if (g && !safetyOk()) { e.preventDefault(); safetyModal(g); }
+  }, true);
 
   function closeSheet() {
     sheet.classList.remove('open');
@@ -535,8 +564,8 @@
         ${s.service_areas ? `<div class="small"><i class="ti ti-route gold"></i> Anafanya kazi: ${esc(s.service_areas)}</div>` : ''}
         ${s.bio ? `<p class="small" style="opacity:.85;white-space:pre-line;margin-bottom:0">${esc(s.bio)}</p>` : ''}
         <div class="store-actions">
-          <a class="btn btn-ghost" href="tel:+${esc(s.phone)}"><i class="ti ti-phone"></i> Piga</a>
-          <a class="btn btn-gold" href="https://wa.me/${esc(s.whatsapp)}?text=${encodeURIComponent('Habari, nimekuona kwenye 88EST.')}" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>
+          <a class="btn btn-ghost" href="tel:+${esc(s.phone)}" data-guard><i class="ti ti-phone"></i> Piga</a>
+          <a class="btn btn-gold" href="https://wa.me/${esc(s.whatsapp)}?text=${encodeURIComponent('Habari, nimekuona kwenye 88EST.')}" target="_blank" rel="noopener" data-guard><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>
         </div>
       </div>
       <div class="sec-h"><h2>Matangazo (${d.listings.length})</h2></div>
@@ -652,7 +681,7 @@
         </div>
         ${installBar()}
       </div>
-      <div class="footer-note">88EST · HUGO TECH</div>`;
+      <div class="footer-note">88EST · HUGO TECH · <a href="/terms.html" style="text-decoration:underline">Terms</a> · <a href="/privacy.html" style="text-decoration:underline">Privacy</a></div>`;
     bindInstall();
   }
 
