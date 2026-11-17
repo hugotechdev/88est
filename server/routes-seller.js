@@ -91,10 +91,12 @@ async function listingFromBody(b, user) {
     photos: JSON.stringify(goodPhotos),
     units_total: U.int(b.units_total, 0, 100000), units_available: U.int(b.units_available, 0, 100000),
     project_status: U.str(b.project_status, 40), payment_plan: U.str(b.payment_plan, 1000),
+    details: JSON.stringify(U.cleanDetails(b.details)),
   };
 }
 
-const LISTING_COLS = ['title', 'category', 'deal', 'price', 'price_period', 'advance_months', 'negotiable', 'region', 'district', 'ward', 'lat', 'lng', 'bedrooms', 'bathrooms', 'size', 'size_unit', 'title_deed', 'surveyed', 'amenities', 'agent_fee', 'viewing_fee', 'description', 'photos', 'units_total', 'units_available', 'project_status', 'payment_plan'];
+const LISTING_COLS = ['title', 'category', 'deal', 'price', 'price_period', 'advance_months', 'negotiable', 'region', 'district', 'ward', 'lat', 'lng', 'bedrooms', 'bathrooms', 'size', 'size_unit', 'title_deed', 'surveyed', 'amenities', 'agent_fee', 'viewing_fee', 'description', 'photos', 'units_total', 'units_available', 'project_status', 'payment_plan', 'details'];
+const JSONB_COLS = ['amenities', 'photos', 'details'];
 
 function myListingRow(l) {
   return {
@@ -297,7 +299,7 @@ module.exports = function (app) {
     const d = await listingFromBody(req.body, req.user);
     const cols = LISTING_COLS.concat(['user_id', 'status']);
     const vals = LISTING_COLS.map((c) => d[c]).concat([req.user.id, await initialStatus(req.user)]);
-    const ph = cols.map((c, i) => '$' + (i + 1) + (c === 'amenities' || c === 'photos' ? '::jsonb' : ''));
+    const ph = cols.map((c, i) => '$' + (i + 1) + (JSONB_COLS.includes(c) ? '::jsonb' : ''));
     const l = await db.one(`INSERT INTO listings(${cols.join(', ')}) VALUES (${ph.join(', ')}) RETURNING *`, vals);
     res.json(myListingRow(l));
   });
@@ -307,7 +309,7 @@ module.exports = function (app) {
     const old = await db.one('SELECT * FROM listings WHERE id = $1 AND user_id = $2', [id, req.user.id]);
     if (!old) throw httpError(404, 'Tangazo halipatikani');
     const d = await listingFromBody(req.body, req.user);
-    const sets = LISTING_COLS.map((c, i) => `${c} = $${i + 1}${c === 'amenities' || c === 'photos' ? '::jsonb' : ''}`);
+    const sets = LISTING_COLS.map((c, i) => `${c} = $${i + 1}${JSONB_COLS.includes(c) ? '::jsonb' : ''}`);
     // Tangazo lililobadilishwa linafuata mipangilio ya ukaguzi
     let status = old.status;
     if (['approved', 'rejected', 'pending'].includes(old.status)) status = await initialStatus(req.user);

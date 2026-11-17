@@ -7,6 +7,24 @@ const PERIODS = ['month', 'year', 'night', 'day', 'total'];
 const ACCOUNT_TYPES = ['agent', 'developer', 'owner'];
 const AMENITIES = ['maji', 'luku_binafsi', 'luku_pamoja', 'uzio', 'geti', 'parking', 'ulinzi', 'cctv', 'fenicha', 'ac', 'wifi', 'jiko_ndani', 'choo_ndani', 'tiles', 'gypsum', 'solar', 'generator', 'lift', 'bwawa', 'gym', 'barabara_lami', 'karibu_barabara', 'bustani', 'stoo'];
 const PLAN_CATEGORIES = ['kiwanja', 'shamba', 'mradi'];
+// Sifa za ziada za tangazo (zinatofautiana kwa kila aina ya mali)
+const DETAIL_KEYS = {
+  room_type: 'str', toilet: 'str', furnished: 'str', floor: 'num', zoning: 'str', road_access: 'str', water_source: 'str',
+  current_use: 'str', shop_location: 'str', rooms: 'num', height: 'num', truck_access: 'bool', power: 'str', guests: 'num',
+  capacity: 'num', completion: 'str', unit_types: 'str',
+};
+function cleanDetails(obj) {
+  const out = {};
+  if (!obj || typeof obj !== 'object') return out;
+  for (const [k, t] of Object.entries(DETAIL_KEYS)) {
+    const v = obj[k];
+    if (v === undefined || v === null || v === '') continue;
+    if (t === 'num') { const n = Number(v); if (Number.isFinite(n) && n >= 0 && n < 1e7) out[k] = n; }
+    else if (t === 'bool') out[k] = v === true || v === 'true';
+    else out[k] = String(v).trim().slice(0, 100);
+  }
+  return out;
+}
 const PLOT_STATUS = ['available', 'reserved', 'sold'];
 const REPORT_REASONS = ['utapeli', 'picha_si_halisi', 'bei_si_sahihi', 'imeshachukuliwa', 'mawasiliano_hayapatikani', 'nyingine'];
 
@@ -208,7 +226,7 @@ function esc(s) {
 }
 
 module.exports = {
-  CATEGORIES, DEALS, PERIODS, ACCOUNT_TYPES, AMENITIES, REPORT_REASONS, TERMS_VERSION, PLAN_CATEGORIES, PLOT_STATUS,
+  CATEGORIES, DEALS, PERIODS, ACCOUNT_TYPES, AMENITIES, REPORT_REASONS, TERMS_VERSION, PLAN_CATEGORIES, PLOT_STATUS, cleanDetails,
   normPhone, slugify, uniqueSlug, str, int, num, bool, need, isEmail, isPro, isAdmin,
   publicSeller, selfUser, sendEmail, rateLimit, clientIp, esc, verifyCaptcha,
 };

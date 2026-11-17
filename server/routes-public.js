@@ -9,7 +9,7 @@ const SELLER_PRO_SQL = "(u.plan = 'pro' AND u.pro_until > now())";
 
 // Sehemu za tangazo zinazotumwa kwenye orodha (cards)
 const CARD_FIELDS = `l.id, l.title, l.category, l.deal, l.price, l.price_period, l.negotiable, l.region, l.district, l.ward,
-  l.bedrooms, l.bathrooms, l.size, l.size_unit, l.photos, l.created_at, l.units_available, l.project_status,
+  l.bedrooms, l.bathrooms, l.size, l.size_unit, l.photos, l.created_at, l.units_available, l.project_status, l.details,
   ${FEATURED_SQL} AS is_featured,
   (SELECT count(*) FROM plots p WHERE p.listing_id = l.id) AS plots_total,
   (SELECT count(*) FROM plots p WHERE p.listing_id = l.id AND p.status = 'available') AS plots_available,
@@ -29,6 +29,7 @@ function cardRow(r) {
     photo: photos[0] || null, photo_count: photos.length,
     units_available: r.units_available, project_status: r.project_status,
     plots_total: Number(r.plots_total || 0), plots_available: Number(r.plots_available || 0),
+    details: r.details || {},
     featured: !!r.is_featured, created_at: r.created_at,
     seller: {
       name: r.seller_business || r.seller_name, slug: r.seller_slug,
@@ -154,6 +155,7 @@ module.exports = function (app) {
       description: l.description, photos: l.photos || [],
       units_total: l.units_total, units_available: l.units_available,
       project_status: l.project_status, payment_plan: l.payment_plan,
+      details: l.details || {},
       status: l.status, featured: !!(l.featured && (!l.featured_until || new Date(l.featured_until) > new Date())),
       views: l.views, created_at: l.created_at, updated_at: l.updated_at,
       siteplan: l.siteplan && l.siteplan.image ? { ...l.siteplan, ...(await plotSummary(l.id)) } : null,

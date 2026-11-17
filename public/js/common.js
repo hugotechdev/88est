@@ -32,6 +32,59 @@
     bwawa: ['Bwawa la kuogelea', 'ti-pool'], gym: ['Gym', 'ti-barbell'], barabara_lami: ['Barabara ya lami', 'ti-road'],
     karibu_barabara: ['Karibu na barabara', 'ti-bus'], bustani: ['Bustani', 'ti-trees'], stoo: ['Stoo', 'ti-box'],
   };
+  // ===== Fomu ya tangazo kwa kila aina ya mali =====
+  // col = inahifadhiwa kwenye safu yake; nyingine zinahifadhiwa ndani ya "details"
+  E.FIELDS = {
+    bedrooms: { l: 'Vyumba vya kulala', t: 'num', col: 1, i: 'ti-bed' },
+    bathrooms: { l: 'Bafu / vyoo', t: 'num', col: 1, i: 'ti-bath' },
+    size: { l: 'Ukubwa', t: 'size', col: 1, i: 'ti-ruler-2' },
+    title_deed: { l: 'Hati miliki ipo?', t: 'yn', col: 1 },
+    surveyed: { l: 'Kimepimwa?', t: 'yn', col: 1 },
+    units_total: { l: 'Units zote', t: 'num', col: 1 },
+    units_available: { l: 'Units zilizobaki', t: 'num', col: 1 },
+    project_status: { l: 'Hatua ya mradi', t: 'sel', col: 1, o: 'PROJECT_STATUS' },
+    payment_plan: { l: 'Mpango wa malipo', t: 'area', col: 1, ph: 'Mf. 30% mwanzo, kisha awamu 6 kila mwezi' },
+    room_type: { l: 'Aina ya chumba', t: 'sel', o: { self: 'Self contained', master: 'Master bedroom', single: 'Chumba kimoja (single)', sebule: 'Chumba na sebule' } },
+    toilet: { l: 'Choo', t: 'sel', o: { ndani: 'Choo ndani', pamoja: 'Choo cha pamoja' } },
+    furnished: { l: 'Fenicha', t: 'sel', o: { hapana: 'Hakuna fenicha', kiasi: 'Fenicha kiasi', kamili: 'Fenicha kamili' } },
+    floor: { l: 'Ghorofa (floor)', t: 'num', ph: '0 = chini kabisa' },
+    zoning: { l: 'Matumizi yaliyoruhusiwa', t: 'sel', o: { makazi: 'Makazi', biashara: 'Biashara', mchanganyiko: 'Makazi na biashara', viwanda: 'Viwanda', kilimo: 'Kilimo' } },
+    road_access: { l: 'Barabara', t: 'sel', o: { lami: 'Barabara ya lami', changarawe: 'Changarawe / udongo', hakuna: 'Hakuna barabara bado' } },
+    water_source: { l: 'Chanzo cha maji', t: 'sel', o: { bomba: 'Maji ya bomba', kisima: 'Kisima', mto: 'Mto / bwawa jirani', hakuna: 'Hakuna' } },
+    current_use: { l: 'Matumizi ya sasa', t: 'text', ph: 'Mf. mahindi, korosho, pori' },
+    shop_location: { l: 'Mahali ilipo', t: 'sel', o: { barabara: 'Barabara kuu', soko: 'Sokoni', mall: 'Jengo la biashara / mall', mafuta: 'Kituo cha mafuta', mtaa: 'Mtaani' } },
+    rooms: { l: 'Vyumba vya ofisi', t: 'num', i: 'ti-door' },
+    height: { l: 'Urefu wa ndani (mita)', t: 'num', i: 'ti-arrows-vertical' },
+    truck_access: { l: 'Lori kubwa linaingia?', t: 'yn' },
+    power: { l: 'Umeme', t: 'sel', o: { kawaida: 'Umeme wa kawaida', three: 'Umeme wa three-phase', hakuna: 'Hakuna umeme' } },
+    guests: { l: 'Wageni (idadi ya juu)', t: 'num', i: 'ti-users' },
+    capacity: { l: 'Uwezo (watu)', t: 'num', i: 'ti-users' },
+    completion: { l: 'Kukamilika', t: 'text', ph: 'Mf. Desemba 2027' },
+    unit_types: { l: 'Aina za units', t: 'text', ph: 'Mf. 1, 2 na 3 bedrooms' },
+  };
+  const AM_RES = ['maji', 'luku_binafsi', 'luku_pamoja', 'uzio', 'geti', 'parking', 'ulinzi', 'cctv', 'ac', 'wifi', 'jiko_ndani', 'choo_ndani', 'tiles', 'gypsum', 'solar', 'generator', 'bwawa', 'gym', 'bustani', 'stoo', 'barabara_lami', 'karibu_barabara'];
+  E.FORMS = {
+    nyumba: { deals: ['rent', 'sale'], f: ['bedrooms', 'bathrooms', 'furnished', 'size', 'title_deed'], units: ['sqm', 'futi za mraba'], am: AM_RES, ph: 'Mf. Nyumba ya vyumba 3 Mbezi Beach' },
+    apartment: { deals: ['rent', 'sale'], f: ['bedrooms', 'bathrooms', 'floor', 'furnished', 'size'], units: ['sqm', 'futi za mraba'], am: AM_RES.concat(['lift']), ph: 'Mf. Apartment ya vyumba 2 Masaki' },
+    chumba: { deals: ['rent'], f: ['room_type', 'toilet', 'furnished'], am: ['maji', 'luku_binafsi', 'luku_pamoja', 'uzio', 'geti', 'parking', 'ulinzi', 'tiles', 'gypsum', 'wifi', 'ac', 'jiko_ndani', 'karibu_barabara'], ph: 'Mf. Chumba self contained Sinza' },
+    kiwanja: { deals: ['sale', 'rent'], f: ['size', 'title_deed', 'surveyed', 'zoning', 'road_access'], units: ['sqm', 'ekari', 'hekta'], am: ['maji', 'luku_binafsi', 'uzio', 'barabara_lami', 'karibu_barabara'], ph: 'Mf. Kiwanja sqm 600 Kigamboni' },
+    shamba: { deals: ['sale', 'rent'], f: ['size', 'title_deed', 'surveyed', 'water_source', 'current_use', 'road_access'], units: ['ekari', 'hekta', 'sqm'], am: ['maji', 'luku_binafsi', 'uzio', 'karibu_barabara'], ph: 'Mf. Shamba ekari 10 Bagamoyo' },
+    frame: { deals: ['rent', 'sale'], f: ['size', 'shop_location', 'floor'], units: ['sqm', 'futi za mraba'], am: ['maji', 'luku_binafsi', 'parking', 'ulinzi', 'cctv', 'choo_ndani', 'tiles', 'generator', 'stoo', 'barabara_lami', 'karibu_barabara'], ph: 'Mf. Frame ya biashara Kariakoo' },
+    ofisi: { deals: ['rent', 'sale'], f: ['size', 'rooms', 'floor', 'furnished'], units: ['sqm', 'futi za mraba'], am: ['maji', 'luku_binafsi', 'parking', 'ulinzi', 'cctv', 'ac', 'wifi', 'lift', 'generator', 'choo_ndani', 'tiles', 'gypsum'], ph: 'Mf. Ofisi sqm 120 Posta' },
+    ghala: { deals: ['rent', 'sale'], f: ['size', 'height', 'truck_access', 'power'], units: ['sqm', 'futi za mraba'], am: ['maji', 'uzio', 'geti', 'parking', 'ulinzi', 'cctv', 'generator', 'solar', 'choo_ndani', 'barabara_lami', 'karibu_barabara'], ph: 'Mf. Ghala sqm 1,000 Mikocheni' },
+    short_stay: { deals: ['short'], f: ['bedrooms', 'bathrooms', 'guests'], am: ['wifi', 'ac', 'fenicha', 'jiko_ndani', 'choo_ndani', 'maji', 'parking', 'ulinzi', 'generator', 'solar', 'bwawa', 'gym', 'bustani'], ph: 'Mf. Apartment ya short stay Njiro' },
+    ukumbi: { deals: ['rent'], periods: ['day'], f: ['capacity', 'size'], units: ['sqm'], am: ['parking', 'ac', 'generator', 'ulinzi', 'cctv', 'choo_ndani', 'wifi', 'jiko_ndani', 'bustani'], ph: 'Mf. Ukumbi wa watu 300 Sinza' },
+    mradi: { deals: ['sale', 'rent'], f: ['unit_types', 'units_total', 'units_available', 'project_status', 'completion', 'title_deed', 'payment_plan'], am: AM_RES.concat(['lift']), ph: 'Mf. Amani Heights: apartments Kigamboni' },
+  };
+  E.optLabel = (key, v) => {
+    const f = E.FIELDS[key];
+    if (!f || v == null || v === '') return null;
+    if (f.t === 'yn') return v === true || v === 'true' ? 'Ndiyo' : 'Hapana';
+    if (key === 'floor' && Number(v) === 0) return 'Chini (ground floor)';
+    if (f.t === 'sel') { const o = typeof f.o === 'string' ? E[f.o] : f.o; return (o && o[v]) || v; }
+    return String(v);
+  };
+
   E.REPORTS = {
     utapeli: 'Nadhani ni utapeli', picha_si_halisi: 'Picha si za mali hii', bei_si_sahihi: 'Bei si sahihi',
     imeshachukuliwa: 'Mali imeshachukuliwa', mawasiliano_hayapatikani: 'Muuzaji hapatikani', nyingine: 'Sababu nyingine',
@@ -40,6 +93,76 @@
     pending: ['Inasubiri ukaguzi', 'st-pending'], approved: ['Iko hewani', 'st-approved'], rejected: ['Imekataliwa', 'st-rejected'],
     taken: ['Imechukuliwa', 'st-taken'], hidden: ['Imefichwa', 'st-hidden'],
   };
+
+  // ===== Tafsiri yetu ya Kiingereza kwa maneno muhimu (Google inakosea baadhi, mf. "Viwanja" -> "Fields") =====
+  E.isEN = () => /(?:^|;\s*)googtrans=\/[^/]*\/en\b/.test(document.cookie);
+  if (E.isEN()) {
+    const CAT_EN = { nyumba: 'Houses', apartment: 'Apartments', chumba: 'Rooms', kiwanja: 'Plots', shamba: 'Farms', frame: 'Shops', ofisi: 'Offices', ghala: 'Warehouses', short_stay: 'Short stay', ukumbi: 'Halls', mradi: 'Projects' };
+    E.CATS.forEach((c) => { c.label = CAT_EN[c.k] || c.label; });
+    E.DEALS = { rent: 'For rent', sale: 'For sale', short: 'Short stay' };
+    E.PERIODS = { month: 'month', year: 'year', night: 'night', day: 'day', total: '' };
+    E.ACCT = { agent: 'Agent', developer: 'Developer', owner: 'Owner' };
+    E.PROJECT_STATUS = { offplan: 'Off-plan', ujenzi: 'Under construction', imekamilika: 'Completed' };
+    const AM_EN = {
+      maji: 'Water', luku_binafsi: 'Own electricity meter', luku_pamoja: 'Shared electricity meter', uzio: 'Fence', geti: 'Gate', parking: 'Parking',
+      ulinzi: 'Security guard', cctv: 'CCTV', fenicha: 'Furnished', ac: 'Air conditioning', wifi: 'WiFi', jiko_ndani: 'Indoor kitchen',
+      choo_ndani: 'Indoor toilet', tiles: 'Tiled floors', gypsum: 'Gypsum ceiling', solar: 'Solar', generator: 'Generator', lift: 'Elevator',
+      bwawa: 'Swimming pool', gym: 'Gym', barabara_lami: 'Tarmac road', karibu_barabara: 'Near main road', bustani: 'Garden', stoo: 'Storeroom',
+    };
+    Object.keys(E.AMEN).forEach((k) => { if (AM_EN[k]) E.AMEN[k][0] = AM_EN[k]; });
+    E.STATUS = { pending: ['Pending review', 'st-pending'], approved: ['Live', 'st-approved'], rejected: ['Rejected', 'st-rejected'], taken: ['Taken', 'st-taken'], hidden: ['Hidden', 'st-hidden'] };
+    E._fieldsEN = {
+      bedrooms: 'Bedrooms', bathrooms: 'Bathrooms', size: 'Size', title_deed: 'Title deed available?', surveyed: 'Surveyed?', units_total: 'Total units',
+      units_available: 'Units available', project_status: 'Project stage', payment_plan: 'Payment plan', room_type: 'Room type', toilet: 'Toilet',
+      furnished: 'Furnishing', floor: 'Floor', zoning: 'Permitted use', road_access: 'Road access', water_source: 'Water source', current_use: 'Current use',
+      shop_location: 'Location type', rooms: 'Office rooms', height: 'Inside height (m)', truck_access: 'Large truck access?', power: 'Electricity',
+      guests: 'Max guests', capacity: 'Capacity (people)', completion: 'Completion', unit_types: 'Unit types',
+    };
+    Object.keys(E._fieldsEN).forEach((k) => { if (E.FIELDS[k]) E.FIELDS[k].l = E._fieldsEN[k]; });
+    E.REPORTS = { utapeli: 'I think it is a scam', picha_si_halisi: 'Photos are not of this property', bei_si_sahihi: 'Wrong price', imeshachukuliwa: 'Already taken', mawasiliano_hayapatikani: 'Seller unreachable', nyingine: 'Other reason' };
+
+    // Kurekebisha makosa ya Google Translate yanayojulikana
+    const FIX = [
+      [/\bStadiums\b/g, 'Plots'], [/\bstadiums\b/g, 'plots'], [/\bStadium\b/g, 'Plot'], [/\bstadium\b/g, 'plot'],
+      [/\bFields\b/g, 'Plots'], [/\bfields\b/g, 'plots'], [/\bField\b/g, 'Plot'], [/\bfield\b/g, 'plot'],
+      [/\bplayground(s?)\b/gi, 'plot$1'], [/\bGuardian\b/g, 'Security guard'], [/\bBiography\b/g, 'Profile'],
+      [/\bHis\/her LUKU\b/gi, 'Own electricity meter'], [/\bJoint LUKU\b/gi, 'Shared electricity meter'], [/\bLUKU\b/g, 'electricity meter'],
+      [/\bframes\b/gi, 'shops'], [/\bFrame\/Shops\b/g, 'Shops'], [/\bbroker\b/g, 'agent'], [/\bBroker\b/g, 'Agent'],
+      [/Does the copyright exist\??/gi, 'Title deed available?'], [/\bcopyright\b/gi, 'title deed'],
+      [/Has it been tested\??/gi, 'Is it surveyed?'], [/Has it been measured\??/gi, 'Is it surveyed?'],
+      [/\bCounty \/ Street\b/g, 'Ward / Street'], [/\bCounty\b/g, 'Ward'],
+      [/\bBei ya jumla\b/g, 'Total price'], [/for mutual understanding/gi, 'negotiable'], [/\bBrokerage fee\b/g, 'Agent fee'],
+    ];
+    const SKIP = { SCRIPT: 1, STYLE: 1, TEXTAREA: 1, INPUT: 1 };
+    const fixNode = (n) => {
+      const t = n.nodeValue;
+      if (!t || !/[A-Za-z]/.test(t)) return;
+      let v = t;
+      FIX.forEach(([re, to]) => { v = v.replace(re, to); });
+      if (v !== t) n.nodeValue = v;
+    };
+    const walk = (root) => {
+      if (!root) return;
+      if (root.nodeType === 3) return fixNode(root);
+      if (root.nodeType !== 1 || SKIP[root.nodeName]) return;
+      const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let n;
+      while ((n = w.nextNode())) { if (!SKIP[n.parentNode.nodeName]) fixNode(n); }
+    };
+    let queued = new Set();
+    const flush = () => { const q = queued; queued = new Set(); q.forEach(walk); };
+    const start = () => {
+      new MutationObserver((muts) => {
+        muts.forEach((m) => {
+          if (m.type === 'characterData') queued.add(m.target);
+          m.addedNodes.forEach((n) => queued.add(n));
+        });
+        requestAnimationFrame(flush);
+      }).observe(document.body, { childList: true, subtree: true, characterData: true });
+      walk(document.body);
+    };
+    if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+  }
 
   E.esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   E.money = (n) => 'TZS ' + Number(n || 0).toLocaleString('en-US');

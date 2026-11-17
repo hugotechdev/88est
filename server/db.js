@@ -105,6 +105,7 @@ CREATE INDEX IF NOT EXISTS listings_user_idx ON listings(user_id);
 CREATE INDEX IF NOT EXISTS listings_region_idx ON listings(region, district);
 
 ALTER TABLE listings ADD COLUMN IF NOT EXISTS siteplan JSONB;
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS details JSONB NOT NULL DEFAULT '{}';
 
 -- Viwanja kwenye mchoro (site plan) wa tangazo la viwanja/mashamba/mradi
 CREATE TABLE IF NOT EXISTS plots (

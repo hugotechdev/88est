@@ -64,6 +64,10 @@
     if (l.bedrooms) f.push(`<span><i class="ti ti-bed"></i>${l.bedrooms}</span>`);
     if (l.bathrooms) f.push(`<span><i class="ti ti-bath"></i>${l.bathrooms}</span>`);
     if (l.size) f.push(`<span><i class="ti ti-ruler-2"></i>${Number(l.size).toLocaleString('en-US')} ${esc(l.size_unit || '')}</span>`);
+    const dt = l.details || {};
+    if (dt.guests) f.push(`<span><i class="ti ti-users"></i>${dt.guests}</span>`);
+    if (dt.capacity) f.push(`<span><i class="ti ti-users"></i>${Number(dt.capacity).toLocaleString('en-US')}</span>`);
+    if (dt.rooms) f.push(`<span><i class="ti ti-door"></i>${dt.rooms}</span>`);
     if (l.plots_total) f.push(`<span><i class="ti ti-map-2"></i>${l.plots_available}/${l.plots_total} vipo</span>`);
     else if (l.category === 'mradi' && l.units_available != null) f.push(`<span><i class="ti ti-building"></i>${l.units_available} zimebaki</span>`);
     return f.length ? `<div class="facts-inline">${f.join('')}</div>` : '';
@@ -367,6 +371,9 @@
     if (l.bathrooms != null) factBox.push(['ti-bath', l.bathrooms + ' bafu']);
     if (l.size) factBox.push(['ti-ruler-2', Number(l.size).toLocaleString('en-US') + ' ' + (l.size_unit || '')]);
     if (l.category === 'mradi' && l.units_available != null) factBox.push(['ti-building', l.units_available + ' units zimebaki']);
+    const dt = l.details || {};
+    ['guests', 'capacity', 'rooms', 'height'].forEach((k) => { if (dt[k] != null && factBox.length < 3) factBox.push([E.FIELDS[k].i, dt[k] + ' · ' + E.FIELDS[k].l.replace(/\s*\(.*\)/, '')]); });
+    if (dt.room_type && factBox.length < 3) factBox.push(['ti-door', E.optLabel('room_type', dt.room_type)]);
     if (l.surveyed && E.LAND.includes(l.category)) factBox.push(['ti-map-check', 'Kimepimwa']);
     if (l.title_deed) factBox.push(['ti-file-certificate', 'Hati ipo']);
     if (factBox.length < 3) factBox.push([cat.icon, cat.label]);
@@ -382,6 +389,7 @@
     if (l.title_deed != null && E.LAND.concat(['nyumba', 'mradi']).includes(l.category)) kv.push(['Hati miliki', l.title_deed ? 'Ipo' : 'Haipo']);
     if (l.surveyed != null && E.LAND.includes(l.category)) kv.push(['Kimepimwa', l.surveyed ? 'Ndiyo' : 'Hapana']);
     if (l.project_status) kv.push(['Hatua ya mradi', E.PROJECT_STATUS[l.project_status] || l.project_status]);
+    Object.keys(dt).forEach((k) => { const v = E.optLabel(k, dt[k]); if (v && E.FIELDS[k]) kv.push([E.FIELDS[k].l, v]); });
 
     const waText = encodeURIComponent(`Habari, nimeona tangazo lako kwenye 88EST: "${l.title}" (${location.origin}/l/${l.id}). Bado linapatikana?`);
     const waUrl = `https://wa.me/${esc(s.whatsapp)}?text=${waText}`;

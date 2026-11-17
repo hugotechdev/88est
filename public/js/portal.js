@@ -378,7 +378,6 @@
     }
     let photos = (l.photos || []).slice();
     let pin = l.lat ? [l.lat, l.lng] : null;
-    const yn = (name, v) => `<select class="input" name="${name}"><option value="" ${v == null ? 'selected' : ''}>Sijui / haihusiki</option><option value="true" ${v === true ? 'selected' : ''}>Ndiyo</option><option value="false" ${v === false ? 'selected' : ''}>Hapana</option></select>`;
 
     main.innerHTML = `
       <h1>${id ? 'Hariri tangazo' : 'Weka tangazo jipya'}</h1>
@@ -386,9 +385,10 @@
       <form id="lf" novalidate>
         <div class="form-sec"><h3><span class="n">1</span> Aina ya mali</h3>
           <div class="cat-pick">${E.CATS.map((c) => `<label><input type="radio" name="category" value="${c.k}" ${l.category === c.k ? 'checked' : ''}><i class="ti ${c.icon}"></i>${c.label}</label>`).join('')}</div>
-          <div class="field mt" id="dealBox"><label>Huduma</label>
-            <div class="seg">${[['rent', 'Kupangisha'], ['sale', 'Kuuza']].map(([k, t]) => `<label><input type="radio" name="deal" value="${k}" ${l.deal === k ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div></div>
+          <div class="field mt" id="dealBox"></div>
         </div>
+
+        <div class="alert alert-gold hide" id="planNote"><i class="ti ti-map-2"></i><div class="small"><b>Mchoro wa viwanja:</b> ukishahifadhi tangazo hili, utapelekwa kupakia mchoro (PDF au picha) na kuweka viwanja ili wateja wachague kiwanja wanachotaka.${id ? ` <a href="#/plan/${id}" style="text-decoration:underline">Fungua mchoro sasa</a>` : ''}</div></div>
 
         <div class="form-sec"><h3><span class="n">2</span> Picha</h3>
           <p class="small muted" style="margin-top:-6px">Picha halisi, mpaka 12. Ya kwanza ndiyo jalada.</p>
@@ -397,7 +397,7 @@
         </div>
 
         <div class="form-sec"><h3><span class="n">3</span> Bei na maelezo</h3>
-          <div class="field"><label>Kichwa cha tangazo *</label><input class="input" name="title" maxlength="120" value="${esc(l.title || '')}" placeholder="Mfano: Nyumba ya vyumba 3 Mbezi Beach"></div>
+          <div class="field"><label>Kichwa cha tangazo *</label><input class="input" name="title" id="lTitle" maxlength="120" value="${esc(l.title || '')}" placeholder="Mfano: Nyumba ya vyumba 3 Mbezi Beach"></div>
           <div class="grid2">
             <div class="field"><label>Bei (TZS) *</label><input class="input" name="price" inputmode="numeric" value="${l.price != null ? Number(l.price).toLocaleString('en-US') : ''}" placeholder="500,000"><div class="hint">Weka 0 kama ni kwa maelewano</div></div>
             <div class="field" id="perBox"><label>Kwa</label><select class="input" name="price_period" id="perSel"></select></div>
@@ -428,28 +428,8 @@
         </div>
 
         <div class="form-sec"><h3><span class="n">5</span> Sifa za mali</h3>
-          <div id="grpRes" class="grid2">
-            <div class="field"><label>Vyumba vya kulala</label><input class="input" name="bedrooms" inputmode="numeric" value="${l.bedrooms ?? ''}"></div>
-            <div class="field"><label>Bafu / Vyoo</label><input class="input" name="bathrooms" inputmode="numeric" value="${l.bathrooms ?? ''}"></div>
-          </div>
-          <div class="grid2">
-            <div class="field"><label>Ukubwa</label><input class="input" name="size" inputmode="decimal" value="${l.size ?? ''}"></div>
-            <div class="field"><label>Kipimo</label><select class="input" name="size_unit">${['sqm', 'ekari', 'hekta', 'futi za mraba'].map((u) => `<option ${l.size_unit === u ? 'selected' : ''}>${u}</option>`).join('')}</select></div>
-          </div>
-          <div id="grpLand" class="grid2">
-            <div class="field"><label>Hati miliki ipo?</label>${yn('title_deed', l.title_deed)}</div>
-            <div class="field"><label>Kimepimwa?</label>${yn('surveyed', l.surveyed)}</div>
-          </div>
-          <div id="grpProj">
-            <div class="grid3">
-              <div class="field"><label>Units zote</label><input class="input" name="units_total" inputmode="numeric" value="${l.units_total ?? ''}"></div>
-              <div class="field"><label>Zilizobaki</label><input class="input" name="units_available" inputmode="numeric" value="${l.units_available ?? ''}"></div>
-              <div class="field"><label>Hatua</label><select class="input" name="project_status"><option value="">Chagua</option>${Object.entries(E.PROJECT_STATUS).map(([k, t]) => `<option value="${k}" ${l.project_status === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-            </div>
-            <div class="field"><label>Mpango wa malipo</label><textarea class="input" name="payment_plan" style="min-height:80px" placeholder="Mfano: 30% mwanzo, kisha awamu 6 kila mwezi">${esc(l.payment_plan || '')}</textarea></div>
-          </div>
-          <div class="field" id="amenBox"><label>Huduma zilizopo</label>
-            <div class="check-grid">${Object.entries(E.AMEN).map(([k, [t, i]]) => `<label class="check" data-am="${k}"><input type="checkbox" name="amenities" value="${k}" ${(l.amenities || []).includes(k) ? 'checked' : ''}><i class="ti ${i}"></i>${t}</label>`).join('')}</div></div>
+          <div id="catFields"><p class="small muted">Chagua aina ya mali juu kwanza.</p></div>
+          <div class="field hide" id="amenBox"><label>Huduma zilizopo</label><div class="check-grid" id="amenGrid"></div></div>
         </div>
 
         <div class="sticky-save"><button class="btn btn-gold btn-block" id="saveBtn"><i class="ti ti-send"></i> ${id ? 'Hifadhi mabadiliko' : 'Weka tangazo'}</button></div>
@@ -493,23 +473,70 @@
     };
     drawPhotos();
 
-    // Sehemu zinazobadilika kulingana na aina ya mali
+    // Sehemu za fomu zinabadilika kulingana na aina ya mali
+    const details = l.details || {};
+    const keep = {};
+    let chosenAm = new Set(l.amenities || []);
+    const valOf = (k) => (keep[k] !== undefined ? keep[k] : E.FIELDS[k] && E.FIELDS[k].col ? l[k] : details[k]);
+    function fieldHtml(k, cfg) {
+      const f = E.FIELDS[k];
+      const name = (f.col ? '' : 'd_') + k;
+      const v = valOf(k);
+      if (f.t === 'num') return `<div class="field"><label>${f.l}</label><input class="input" name="${name}" inputmode="numeric" value="${v ?? ''}" placeholder="${esc(f.ph || '')}"></div>`;
+      if (f.t === 'text') return `<div class="field"><label>${f.l}</label><input class="input" name="${name}" maxlength="100" value="${esc(v ?? '')}" placeholder="${esc(f.ph || '')}"></div>`;
+      if (f.t === 'area') return `<div class="field" style="grid-column:1/-1"><label>${f.l}</label><textarea class="input" name="${name}" style="min-height:80px" placeholder="${esc(f.ph || '')}">${esc(v ?? '')}</textarea></div>`;
+      if (f.t === 'yn') {
+        const sv = v === true || v === 'true' ? 'true' : v === false || v === 'false' ? 'false' : '';
+        return `<div class="field"><label>${f.l}</label><select class="input" name="${name}"><option value="" ${sv === '' ? 'selected' : ''}>Sijui / haihusiki</option><option value="true" ${sv === 'true' ? 'selected' : ''}>Ndiyo</option><option value="false" ${sv === 'false' ? 'selected' : ''}>Hapana</option></select></div>`;
+      }
+      if (f.t === 'sel') {
+        const o = typeof f.o === 'string' ? E[f.o] : f.o;
+        return `<div class="field"><label>${f.l}</label><select class="input" name="${name}"><option value="">Chagua</option>${Object.entries(o).map(([ok, t]) => `<option value="${ok}" ${String(v) === ok ? 'selected' : ''}>${t}</option>`).join('')}</select></div>`;
+      }
+      if (f.t === 'size') {
+        const units = cfg.units || ['sqm'];
+        const u = keep.size_unit !== undefined ? keep.size_unit : (units.includes(l.size_unit) ? l.size_unit : units[0]);
+        return `<div class="field"><label>${f.l}</label><div class="row gap"><input class="input grow" name="size" inputmode="decimal" value="${v ?? ''}">
+          <select class="input" name="size_unit" style="width:auto">${units.map((x) => `<option ${u === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div></div>`;
+      }
+      return '';
+    }
+    function saveKeep() {
+      $('#catFields').querySelectorAll('[name]').forEach((el) => { keep[el.name.replace(/^d_/, '')] = el.value; });
+      chosenAm = new Set([...$('#amenGrid').querySelectorAll('input:checked')].map((x) => x.value));
+    }
+    let lastCat = null;
     function sync() {
       const cat = (form.querySelector('[name=category]:checked') || {}).value || '';
-      const short = cat === 'short_stay';
-      $('#dealBox').classList.toggle('hide', short);
-      const deal = short ? 'short' : (form.querySelector('[name=deal]:checked') || {}).value || 'rent';
+      const cfg = E.FORMS[cat];
+      $('#planNote').classList.toggle('hide', !['kiwanja', 'shamba', 'mradi'].includes(cat));
+      if (!cfg) return;
+      if (cat !== lastCat) {
+        if (lastCat) saveKeep();
+        lastCat = cat;
+        // Huduma (kupangisha / kuuza)
+        const curDeal = (form.querySelector('[name=deal]:checked') || {}).value || l.deal;
+        const deal = cfg.deals.includes(curDeal) ? curDeal : cfg.deals[0];
+        const DL = { rent: cat === 'ukumbi' ? 'Kukodisha' : 'Kupangisha', sale: 'Kuuza', short: 'Short stay' };
+        $('#dealBox').innerHTML = cfg.deals.length > 1
+          ? `<label>Huduma</label><div class="seg">${cfg.deals.map((k) => `<label><input type="radio" name="deal" value="${k}" ${deal === k ? 'checked' : ''}><span>${DL[k]}</span></label>`).join('')}</div>`
+          : `<input type="hidden" name="deal" value="${cfg.deals[0]}">`;
+        // Sifa
+        const cols = cfg.f.map((k) => fieldHtml(k, cfg)).join('');
+        $('#catFields').innerHTML = `<div class="grid2">${cols}</div>`;
+        // Huduma zilizopo
+        $('#amenBox').classList.toggle('hide', !cfg.am.length);
+        $('#amenGrid').innerHTML = cfg.am.filter((k) => E.AMEN[k]).map((k) => `<label class="check"><input type="checkbox" name="amenities" value="${k}" ${chosenAm.has(k) ? 'checked' : ''}><i class="ti ${E.AMEN[k][1]}"></i>${E.AMEN[k][0]}</label>`).join('');
+        $('#lTitle').placeholder = cfg.ph || '';
+      }
+      // Bei ni kwa nini (inategemea huduma)
+      const deal = (form.querySelector('[name=deal]:checked') || form.querySelector('[name=deal]') || {}).value || cfg.deals[0];
       const per = $('#perSel');
       const cur = per.value || l.price_period;
-      const opts = deal === 'sale' ? [['total', 'Bei ya jumla']] : deal === 'short' ? [['night', 'Usiku'], ['day', 'Siku']] : [['month', 'Mwezi'], ['year', 'Mwaka']];
-      per.innerHTML = opts.map(([k, t]) => `<option value="${k}" ${cur === k ? 'selected' : ''}>${t}</option>`).join('');
-      $('#advBox').classList.toggle('hide', deal !== 'rent');
-      const land = E.LAND.includes(cat);
-      $('#grpRes').classList.toggle('hide', land || cat === 'ghala' || cat === 'ukumbi');
-      $('#grpLand').classList.toggle('hide', !(land || cat === 'nyumba' || cat === 'mradi'));
-      $('#grpProj').classList.toggle('hide', cat !== 'mradi');
-      const landAm = ['maji', 'luku_binafsi', 'uzio', 'barabara_lami', 'karibu_barabara'];
-      form.querySelectorAll('[data-am]').forEach((el) => el.classList.toggle('hide', land && !landAm.includes(el.dataset.am)));
+      const PL = { month: 'Mwezi', year: 'Mwaka', night: 'Usiku', day: 'Siku', total: 'Bei ya jumla' };
+      const opts = deal === 'sale' ? ['total'] : deal === 'short' ? ['night', 'day'] : (cfg.periods || ['month', 'year']);
+      per.innerHTML = opts.map((k) => `<option value="${k}" ${cur === k ? 'selected' : ''}>${PL[k]}</option>`).join('');
+      $('#advBox').classList.toggle('hide', !(deal === 'rent' && cat !== 'ukumbi'));
     }
     form.addEventListener('change', (e) => { if (e.target.name === 'category' || e.target.name === 'deal') sync(); });
     sync();
@@ -539,6 +566,18 @@
       const d = E.formData(form);
       if (!d.category) return E.toast('Chagua aina ya mali', 'err');
       d.amenities = [].concat(d.amenities || []);
+      d.details = {};
+      Object.keys(d).forEach((k) => {
+        if (!k.startsWith('d_')) return;
+        const key = k.slice(2);
+        const f = E.FIELDS[key];
+        let v = d[k];
+        delete d[k];
+        if (v === '' || v == null || !f) return;
+        if (f.t === 'num') { v = Number(String(v).replace(/[^\d.]/g, '')); if (!Number.isFinite(v)) return; }
+        if (f.t === 'yn') v = v === 'true';
+        d.details[key] = v;
+      });
       d.photos = photos;
       d.price = String(d.price || '').replace(/[^\d]/g, '');
       d.negotiable = !!d.negotiable;

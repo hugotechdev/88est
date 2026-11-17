@@ -1,7 +1,11 @@
 // 88EST - Mchoro wa viwanja (site plan): kionyeshi cha mteja na zana ya kuchora ya muuzaji
 (function () {
   const esc = E.esc;
-  const ST = {
+  const ST = E.isEN && E.isEN() ? {
+    available: ['Available', 'sp-av'],
+    reserved: ['Reserved', 'sp-rs'],
+    sold: ['Sold', 'sp-sd'],
+  } : {
     available: ['Kinapatikana', 'sp-av'],
     reserved: ['Kimeshikiliwa', 'sp-rs'],
     sold: ['Kimeuzwa', 'sp-sd'],
@@ -61,9 +65,9 @@
     root.innerHTML = `
       <div class="sp">
         <div class="sp-legend">
-          <span class="sp-key sp-av">Vinapatikana ${counts.available}</span>
-          <span class="sp-key sp-rs">Vimeshikiliwa ${counts.reserved}</span>
-          <span class="sp-key sp-sd">Vimeuzwa ${counts.sold}</span>
+          <span class="sp-key sp-av">${E.isEN() ? 'Available' : 'Vinapatikana'} ${counts.available}</span>
+          <span class="sp-key sp-rs">${E.isEN() ? 'Reserved' : 'Vimeshikiliwa'} ${counts.reserved}</span>
+          <span class="sp-key sp-sd">${E.isEN() ? 'Sold' : 'Vimeuzwa'} ${counts.sold}</span>
         </div>
         <div class="sp-bar">
           <label class="sp-tg"><input type="checkbox" data-only> Vinavyopatikana tu</label>
@@ -156,9 +160,9 @@
     function shell() {
       if (!plan) {
         root.innerHTML = `<div class="upl sp-upload" style="padding:30px;justify-content:center;flex-direction:column;text-align:center">
-          <i class="ti ti-map-2" style="font-size:40px"></i><b>Pakia picha ya mchoro (survey plan)</b>
-          <span class="small muted">JPG au PNG. Ukiwa na PDF, piga picha ya skrini au ibadilishe kuwa JPG kwanza.</span></div>
-          <input type="file" accept="image/*" hidden class="sp-file">`;
+          <i class="ti ti-map-2" style="font-size:40px"></i><b>Pakia mchoro (survey plan)</b>
+          <span class="small muted">PDF, JPG au PNG</span></div>
+          <input type="file" accept="image/*,application/pdf,.pdf" hidden class="sp-file">`;
         root.querySelector('.sp-upload').onclick = () => root.querySelector('.sp-file').click();
         root.querySelector('.sp-file').onchange = (e) => uploadPlan(e.target.files[0]);
         return;
@@ -186,12 +190,12 @@
           <div class="sp-form"></div>
           <div class="row between wrap gap mt">
             <div class="small muted"><b class="sp-count"></b></div>
-            <div class="row gap"><button type="button" class="btn btn-ghost btn-sm" data-replace><i class="ti ti-photo"></i> Badilisha picha</button>
+            <div class="row gap"><button type="button" class="btn btn-ghost btn-sm" data-replace><i class="ti ti-photo"></i> Badilisha mchoro</button>
               <button type="button" class="btn btn-ghost btn-sm" data-bulk><i class="ti ti-adjustments"></i> Bei/ukubwa kwa vyote</button></div>
           </div>
           <div class="sp-table"></div>
           <div class="sticky-save"><button type="button" class="btn btn-gold btn-block sp-save"><i class="ti ti-device-floppy"></i> Hifadhi mchoro</button></div>
-          <input type="file" accept="image/*" hidden class="sp-file">
+          <input type="file" accept="image/*,application/pdf,.pdf" hidden class="sp-file">
         </div>`;
       const view = root.querySelector('.sp-view');
       const inner = root.querySelector('.sp-inner');
@@ -394,11 +398,41 @@
       };
     }
 
+    // PDF: ukurasa mmoja unabadilishwa kuwa picha hapa hapa kwenye kifaa cha muuzaji
+    async function pdfToImage(file) {
+      const pdfjs = await import('/vendor/pdfjs/pdf.min.mjs');
+      pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.mjs';
+      const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+      let pageNo = 1;
+      if (doc.numPages > 1) {
+        pageNo = await new Promise((resolve) => {
+          const m = E.modal(`<h3>PDF ina kurasa ${doc.numPages}</h3><p class="small muted">Chagua ukurasa wenye mchoro wa viwanja.</p>
+            <input class="input" id="pgN" inputmode="numeric" value="1"><button class="btn btn-gold btn-block mt" id="pgOk">Tumia ukurasa huu</button>`);
+          m.querySelector('#pgOk').onclick = () => { const n = Math.min(doc.numPages, Math.max(1, parseInt(m.querySelector('#pgN').value, 10) || 1)); E.closeModal(); resolve(n); };
+          m.parentElement.addEventListener('click', (e) => { if (e.target.closest('[data-close]') || e.target === m.parentElement) resolve(0); });
+        });
+        if (!pageNo) throw new Error('Umeghairi');
+      }
+      const page = await doc.getPage(pageNo);
+      const base = page.getViewport({ scale: 1 });
+      const scale = Math.min(5, 2600 / Math.max(base.width, base.height));
+      const vp = page.getViewport({ scale });
+      const c = document.createElement('canvas');
+      c.width = Math.round(vp.width);
+      c.height = Math.round(vp.height);
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: ctx, viewport: vp, canvas: c }).promise;
+      return c.toDataURL('image/jpeg', 0.86);
+    }
+
     async function uploadPlan(file) {
       if (!file) return;
-      E.toast('Inapakia mchoro...');
+      const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+      E.toast(isPdf ? 'Inasoma PDF...' : 'Inapakia mchoro...');
       try {
-        const data = await E.compressImage(file, 2600, 0.86);
+        const data = isPdf ? await pdfToImage(file) : await E.compressImage(file, 2600, 0.86);
         const dims = await new Promise((resolve) => { const im = new Image(); im.onload = () => resolve([im.naturalWidth, im.naturalHeight]); im.src = data; });
         const r = await E.api('/api/upload', { body: { data, private: false } });
         if (plan && plots.length && !(await E.confirm('Viwanja vilivyochorwa vitabaki mahali pale pale kwenye picha mpya. Endelea?'))) return;
