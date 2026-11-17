@@ -1,0 +1,17 @@
+{
+  "name": "88EST - Real estate marketplace",
+  "short_name": "88EST",
+  "description": "Nyumba, viwanja, frame, ofisi na kila aina ya mali Tanzania",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1F2125",
+  "theme_color": "#1F2125",
+  "lang": "sw",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
