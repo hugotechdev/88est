@@ -144,6 +144,28 @@ CREATE TABLE IF NOT EXISTS ratings (
   UNIQUE (user_id, phone)
 );
 
+CREATE TABLE IF NOT EXISTS admin_logs (
+  id SERIAL PRIMARY KEY,
+  admin_id INTEGER,
+  admin_name TEXT,
+  action TEXT NOT NULL,
+  target TEXT,
+  details TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS admin_logs_time_idx ON admin_logs(created_at);
+
+CREATE TABLE IF NOT EXISTS agent_logs (
+  id SERIAL PRIMARY KEY,
+  session TEXT,
+  question TEXT,
+  reply TEXT,
+  source TEXT,
+  results INTEGER,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS agent_logs_time_idx ON agent_logs(created_at);
+
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT
@@ -158,6 +180,10 @@ const DEFAULT_SETTINGS = {
   featured_price_week: '10000',
   support_phone: '255785799530',
   support_email: 'info@hugotech.co.tz',
+  agent_enabled: '1',
+  agent_ai_enabled: '1',
+  agent_daily_limit: '20',
+  agent_faq: '',
   pay_instructions:
     'Lipia kwa M-Pesa, Airtel Money au Mixx kwa namba utakayopewa na timu ya 88EST. Kisha weka namba ya muamala (reference) hapa chini, au tuma ujumbe WhatsApp +255785799530.',
 };
@@ -178,14 +204,14 @@ async function init() {
   if (phone && pw) {
     const ex = await one('SELECT id FROM users WHERE phone = $1', [phone]);
     if (ex) {
-      await pool.query("UPDATE users SET role = 'admin', password_hash = $1, status = 'active' WHERE id = $2", [hashPassword(pw), ex.id]);
+      await pool.query("UPDATE users SET role = 'superadmin', password_hash = $1, status = 'active' WHERE id = $2", [hashPassword(pw), ex.id]);
     } else {
       await pool.query(
-        "INSERT INTO users(role, account_type, name, phone, phone_verified, password_hash, slug) VALUES ('admin', 'agent', 'Admin 88EST', $1, true, $2, $3)",
+        "INSERT INTO users(role, account_type, name, phone, phone_verified, password_hash, slug) VALUES ('superadmin', 'agent', 'Super Admin 88EST', $1, true, $2, $3)",
         [phone, hashPassword(pw), 'admin-' + Date.now()]
       );
     }
-    console.log('Akaunti ya admin iko tayari: ' + phone);
+    console.log('Akaunti ya super admin iko tayari: ' + phone);
   } else {
     console.log('ONYO: Weka ADMIN_PHONE na ADMIN_PASSWORD kwenye Variables ili kupata akaunti ya admin.');
   }

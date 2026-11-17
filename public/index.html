@@ -14,13 +14,30 @@
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body class="app">
   <div class="bg" aria-hidden="true"><div class="bg-img" id="bgA"></div><div class="bg-img" id="bgB"></div></div>
+  <header class="dtop glass" id="dtop">
+    <div class="dtop-in">
+      <a href="#/" class="dlogo" id="dLogo"></a>
+      <nav class="dlinks">
+        <a href="#/" data-nav="home"><i class="ti ti-home"></i> Gundua</a>
+        <a href="#/s?deal=rent" data-nav="rent"><i class="ti ti-key"></i> Kupanga</a>
+        <a href="#/s?deal=sale" data-nav="sale"><i class="ti ti-building-bank"></i> Kununua</a>
+        <a href="#/madalali" data-nav="madalali"><i class="ti ti-users"></i> Madalali</a>
+        <a href="#/vipendwa" data-nav="vipendwa"><i class="ti ti-heart"></i> Vipendwa</a>
+      </nav>
+      <div class="dright">
+        <span id="dLang"></span>
+        <a class="btn btn-gold dpost" href="/portal.html#/new"><i class="ti ti-plus"></i> Weka tangazo</a>
+        <a class="me-btn glass" href="#/akaunti" aria-label="Akaunti"><i class="ti ti-user"></i></a>
+      </div>
+    </div>
+  </header>
   <div class="shell">
     <main id="view"></main>
   </div>
@@ -28,7 +45,7 @@
   <nav class="bnav glass" id="bnav">
     <a href="#/" data-nav="home"><i class="ti ti-home"></i>Gundua</a>
     <a href="#/vipendwa" data-nav="vipendwa"><i class="ti ti-heart"></i>Vipendwa</a>
-    <a href="/portal.html#/new" aria-label="Weka tangazo"><span class="plus"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><polyline points="14,27 32,13 50,27" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><text x="32" y="54" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="26" fill="#fff">88</text></svg></span></a>
+    <a href="/portal.html#/new" aria-label="Weka tangazo"><span class="plus"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><polyline points="14,27 32,13 50,27" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><text x="32" y="54" text-anchor="middle" font-family="Plus Jakarta Sans, Arial, sans-serif" font-weight="700" font-size="26" fill="#fff">88</text></svg></span></a>
     <a href="#/madalali" data-nav="madalali"><i class="ti ti-users"></i>Madalali</a>
     <a href="#/akaunti" data-nav="akaunti"><i class="ti ti-user-circle"></i>Akaunti</a>
   </nav>
@@ -38,5 +55,6 @@
   <script src="/js/locations.js"></script>
   <script src="/js/common.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/js/agent.js"></script>
 </body>
 </html>

@@ -124,7 +124,7 @@ module.exports = function (app) {
     let visible = l.status === 'approved' && seller && seller.status === 'active';
     if (!visible) {
       const me = await loadUser(req);
-      visible = me && (me.role === 'admin' || me.id === l.user_id);
+      visible = me && (U.isAdmin(me) || me.id === l.user_id);
       if (!visible) throw httpError(404, 'Tangazo hili halipatikani tena');
     }
     if (l.status === 'approved') await db.q('UPDATE listings SET views = views + 1 WHERE id = $1', [id]);
@@ -235,7 +235,7 @@ module.exports = function (app) {
     if (!img) { res.writeHead(404); return res.end(); }
     if (img.private) {
       const me = await loadUser(req);
-      if (!me || (me.role !== 'admin' && me.id !== img.owner_id)) { res.writeHead(403); return res.end(); }
+      if (!me || (!U.isAdmin(me) && me.id !== img.owner_id)) { res.writeHead(403); return res.end(); }
     }
     const data = Buffer.isBuffer(img.data) ? img.data : Buffer.from(img.data);
     res.writeHead(200, {

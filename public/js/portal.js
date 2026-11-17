@@ -102,7 +102,7 @@
           <div class="field"><label>Namba ya simu</label><input class="input" name="phone" inputmode="tel" placeholder="0712 345 678" required autocomplete="tel"></div>
           <div class="field"><label>Password</label><input class="input" name="password" type="password" required autocomplete="current-password"></div>
           <button class="btn btn-dark btn-block">Ingia</button>
-          <p class="small muted center mt">Umesahau password? Wasiliana na 88EST kupitia WhatsApp tukusaidie.</p>
+          <p class="small center mt"><a href="#/forgot" style="color:var(--gold-d);font-weight:600">Umesahau password?</a></p>
         </form>`;
       $('#lf').onsubmit = async (e) => {
         e.preventDefault();
@@ -110,7 +110,7 @@
         E.busy(btn, true);
         try {
           const r = await E.api('/api/auth/login', { body: E.formData(e.target), token: '' });
-          if (r.user.role === 'admin') {
+          if (r.user.role === 'admin' || r.user.role === 'superadmin') {
             localStorage.setItem('est_admin', r.token);
             location.href = '/admin.html';
             return;
@@ -122,6 +122,55 @@
         } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
       };
     }
+  }
+
+  // ===== Umesahau password =====
+  function forgotPage() {
+    document.title = 'Badilisha password | 88EST';
+    root.innerHTML = `
+      <div class="auth-wrap">
+        <div style="width:100%;max-width:460px;display:flex;justify-content:space-between;align-items:center"><a href="/">${E.logo(true)}</a>${E.langButton('dark')}</div>
+        <div class="auth-card">
+          <h2>Badilisha password</h2>
+          <p class="small muted">Weka namba ya simu uliyosajilia. Tutatuma code kwenye email ya akaunti yako.</p>
+          <form id="ff">
+            <div class="field"><label>Namba ya simu</label><input class="input" name="phone" inputmode="tel" placeholder="0712 345 678" required></div>
+            <button class="btn btn-dark btn-block">Tuma code</button>
+          </form>
+          <form id="rf2" class="hide mt">
+            <div class="alert alert-gold small" id="fMsg"></div>
+            <div class="field"><label>Code kutoka email</label><input class="input" name="code" inputmode="numeric" maxlength="6" required></div>
+            <div class="field"><label>Password mpya</label><input class="input" name="password" type="password" minlength="6" required></div>
+            <button class="btn btn-gold btn-block">Badilisha na ingia</button>
+          </form>
+          <p class="small center mt"><a href="#/login" style="color:var(--gold-d);font-weight:600">Rudi kuingia</a></p>
+        </div>
+      </div>`;
+    let phone = '';
+    $('#ff').onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      E.busy(btn, true);
+      try {
+        phone = e.target.phone.value;
+        const r = await E.api('/api/auth/forgot', { body: { phone }, token: '' });
+        $('#fMsg').textContent = r.message;
+        e.target.classList.add('hide');
+        $('#rf2').classList.remove('hide');
+      } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
+    };
+    $('#rf2').onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      E.busy(btn, true);
+      try {
+        const r = await E.api('/api/auth/reset', { body: { phone, ...E.formData(e.target) }, token: '' });
+        localStorage.setItem('est_token', r.token);
+        setMe(r);
+        E.toast('Password imebadilishwa', 'ok');
+        location.hash = '#/';
+      } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
+    };
   }
 
   // ===== Muundo wa portal =====
@@ -173,9 +222,9 @@
 
     // Arifa muhimu
     const al = [];
-    if (!u.phone_verified) {
-      al.push(`<div class="alert alert-gold"><i class="ti ti-device-mobile-message"></i><div class="grow">
-        <b>Thibitisha namba yako ya simu</b><div class="small">Tumetuma code ya tarakimu 6 kwa SMS kwenda ${esc(E.phoneLocal(u.phone))}.</div>
+    if (!u.email_verified) {
+      al.push(`<div class="alert alert-gold"><i class="ti ti-mail-check"></i><div class="grow">
+        <b>Thibitisha email yako</b><div class="small">Tumetuma code ya tarakimu 6 kwenda <b>${esc(u.email || '')}</b>. Angalia pia folda ya Spam.</div>
         <form id="otpF" class="row gap mt-s"><input class="input" name="code" inputmode="numeric" maxlength="6" placeholder="Code" style="max-width:140px"><button class="btn btn-dark btn-sm">Thibitisha</button><button type="button" class="btn btn-ghost btn-sm" id="otpRe">Tuma tena</button></form></div></div>`);
     }
     if (u.verify_level === 0 && !S.verPending) {
@@ -188,7 +237,7 @@
         e.preventDefault();
         try {
           setMe(await E.api('/api/otp/verify', { body: E.formData(e.target) }));
-          E.toast('Namba imethibitishwa', 'ok');
+          E.toast('Email imethibitishwa', 'ok');
           dashboard();
         } catch (err) { E.toast(err.message, 'err'); }
       };
@@ -474,8 +523,8 @@
             <div class="type-pick">${Object.entries(E.ACCT).map(([k, t]) => `<label><input type="radio" name="account_type" value="${k}" ${u.account_type === k ? 'checked' : ''}><i class="ti ${{ agent: 'ti-user-star', developer: 'ti-crane', owner: 'ti-home-heart' }[k]}"></i>${t}</label>`).join('')}</div></div>
           <div class="field"><label>Jina kamili</label><input class="input" name="name" value="${esc(u.name)}"></div>
           <div class="field"><label>Jina la biashara/kampuni</label><input class="input" name="business_name" value="${esc(u.business_name || '')}"></div>
-          <div class="field"><label>Namba ya simu</label><input class="input" value="${esc(E.phoneLocal(u.phone))}" disabled><div class="hint">${u.phone_verified ? '<i class="ti ti-check gold"></i> Imethibitishwa' : 'Bado haijathibitishwa'} · Kubadilisha namba wasiliana na 88EST</div></div>
-          <div class="field"><label>Email</label><input class="input" name="email" type="email" value="${esc(u.email || '')}"></div>
+          <div class="field"><label>Namba ya simu</label><input class="input" value="${esc(E.phoneLocal(u.phone))}" disabled><div class="hint">Kubadilisha namba wasiliana na 88EST</div></div>
+          <div class="field"><label>Email</label><input class="input" name="email" type="email" value="${esc(u.email || '')}"><div class="hint">${u.email_verified ? '<i class="ti ti-check gold"></i> Imethibitishwa' : 'Bado haijathibitishwa. Ukibadilisha email, utatumiwa code mpya.'}</div></div>
           <div class="field"><label>Namba ya WhatsApp</label><input class="input" name="whatsapp" inputmode="tel" value="${esc(E.phoneLocal(u.whatsapp === u.phone ? '' : u.whatsapp))}" placeholder="Kama ni tofauti na ya simu"></div>
           <div class="field"><label>Kuhusu wewe / biashara yako</label><textarea class="input" name="bio" maxlength="1000" placeholder="Mfano: Tunapangisha na kuuza nyumba Kinondoni tangu 2015...">${esc(u.bio || '')}</textarea></div>
         </div>
@@ -656,6 +705,7 @@
   // ===== Router =====
   async function route() {
     const h = (location.hash.replace(/^#/, '') || '/').split('?')[0];
+    if (h === '/forgot') return forgotPage();
     if (h === '/login' || h === '/register') {
       if (S.me || (await loadMe())) { location.hash = '#/'; return; }
       return authPage(h.slice(1));

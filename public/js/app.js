@@ -124,10 +124,12 @@
       const mid = el.scrollLeft + el.clientWidth / 2;
       let best = 0;
       let bestD = 9;
+      const wide = window.innerWidth >= 900;
       cards.forEach((c, i) => {
         const cMid = c.offsetLeft + c.offsetWidth / 2;
         const d = Math.max(-1, Math.min(1, (cMid - mid) / c.offsetWidth));
         if (Math.abs(d) < bestD) { bestD = Math.abs(d); best = i; }
+        if (wide) { c.style.transform = ''; c.style.opacity = ''; return; }
         c.style.transform = `scale(${1 - Math.abs(d) * 0.1}) rotateY(${d * -14}deg)`;
         c.style.opacity = String(1 - Math.abs(d) * 0.35);
       });
@@ -138,6 +140,16 @@
       }
     };
     el.addEventListener('scroll', () => requestAnimationFrame(upd), { passive: true });
+    window.addEventListener('resize', () => requestAnimationFrame(upd));
+    // Mishale ya kuteleza kwa skrini pana
+    const box = el.parentElement;
+    if (box && cards.length > 1 && !box.querySelector('.hero-arrow')) {
+      box.style.position = 'relative';
+      box.insertAdjacentHTML('beforeend', '<button class="hero-arrow l glass" aria-label="Nyuma"><i class="ti ti-chevron-left"></i></button><button class="hero-arrow r glass" aria-label="Mbele"><i class="ti ti-chevron-right"></i></button>');
+      const step = () => (cards[0].offsetWidth + 14);
+      box.querySelector('.hero-arrow.l').onclick = () => el.scrollBy({ left: -step(), behavior: 'smooth' });
+      box.querySelector('.hero-arrow.r').onclick = () => el.scrollBy({ left: step(), behavior: 'smooth' });
+    }
     upd();
   }
 
@@ -334,6 +346,7 @@
   async function openListing(id) {
     sheetInner.innerHTML = `<div class="gallery skel" style="border-radius:0"></div><div class="d-body"><div class="grab"></div><div class="skel" style="height:24px;width:70%"></div><div class="skel mt" style="height:14px;width:50%"></div></div>`;
     sheet.classList.add('open');
+    document.body.classList.add('sheet-open');
     document.body.style.overflow = 'hidden';
     sheet.scrollTop = 0;
     let l;
@@ -387,7 +400,7 @@
         </div>
         ${photos.length > 1 ? `<span class="g-count" id="gcount">1 / ${photos.length}</span>` : ''}
       </div>
-      <div class="d-body">
+      <div class="d-body"><div class="d-wrap"><div class="d-main">
         <div class="grab"></div>
         ${l.status !== 'approved' ? `<div class="card" style="background:#FFF4D6;margin-bottom:12px">Hali ya tangazo: <b>${esc((E.STATUS[l.status] || [l.status])[0])}</b> (umma hauoni tangazo hili)</div>` : ''}
         <h1>${esc(l.title)}</h1>
@@ -415,12 +428,18 @@
           <div class="row between mt"><span class="muted tiny">Tangazo #${l.id} · ${E.timeAgo(l.created_at)} · Limeonwa mara ${l.views}</span>
           <button class="report-link" id="report"><i class="ti ti-flag"></i> Ripoti</button></div>
         </div>
-        <div id="similar"></div>
       </div>
-      <div class="cta glass">
+      <aside class="d-side"><div class="cta glass">
         <div class="pr"><b class="notranslate" translate="no">${l.price ? E.money(l.price) : 'Maelewano'}</b><small>${l.price && E.PERIODS[l.price_period] ? 'kwa ' + E.PERIODS[l.price_period] : esc(E.DEALS[l.deal])}${l.advance_months ? ' · miezi ' + l.advance_months + ' mbele' : ''}${l.negotiable ? ' · inajadilika' : ''}</small></div>
         <a class="call-btn" href="tel:+${esc(s.phone)}" data-lead="call" aria-label="Piga simu"><i class="ti ti-phone"></i></a>
         <a class="wa-btn" href="${waUrl}" target="_blank" rel="noopener" data-lead="wa"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>
+        <div class="cta-more">
+          <div class="host" data-store="${esc(s.slug)}" style="cursor:pointer;background:rgba(255,255,255,.6)"><div class="avatar">${avatar}</div>
+            <div style="min-width:0"><div class="nm">${esc(sname)}${E.verifyIcon(s)}</div><div class="muted small">${esc(E.ACCT[s.account_type] || '')} · Angalia matangazo yake</div></div></div>
+          <p class="tiny muted" style="margin:10px 0 0"><i class="ti ti-shield-check gold"></i> Usitume pesa kabla ya kuona mali.</p>
+        </div>
+      </div></aside></div>
+      <div id="similar"></div>
       </div>`;
 
     const track = $('#track');
@@ -447,13 +466,14 @@
     E.api('/api/listings?' + qs({ category: l.category, region: l.region, limit: 10 })).then((r) => {
       const items = r.items.filter((x) => x.id !== l.id);
       if (items.length && $('#similar')) {
-        $('#similar').innerHTML = `<div class="d-sec" style="margin:0 -20px"><h3 style="padding:0 20px">Mali zinazofanana</h3><div class="hscroll" style="padding:2px 20px 8px">${items.map(miniCard).join('')}</div></div>`;
+        $('#similar').innerHTML = `<div class="d-sec sim"><h3>Mali zinazofanana</h3><div class="hscroll">${items.map(miniCard).join('')}</div></div>`;
       }
     }).catch(() => {});
   }
 
   function closeSheet() {
     sheet.classList.remove('open');
+    document.body.classList.remove('sheet-open');
     document.body.style.overflow = '';
   }
 
@@ -678,7 +698,10 @@
     return { path, params: Object.fromEntries(new URLSearchParams(query || '')) };
   }
   function setNav(name) {
-    document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === name));
+    const { path, params } = parseHash();
+    let dn = name;
+    if (path === '/s' && (params.deal === 'rent' || params.deal === 'sale') && Object.keys(params).length === 1) dn = params.deal;
+    document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === (a.closest('.dlinks') ? dn : name)));
   }
   async function route() {
     const { path, params } = parseHash();
@@ -705,6 +728,10 @@
     return home();
   }
   window.addEventListener('hashchange', route);
+
+  // Kichwa cha skrini pana
+  $('#dLogo').innerHTML = E.logo();
+  $('#dLang').innerHTML = E.langButton('glass');
 
   E.api('/api/config').then((c) => { S.cfg = c; }).catch(() => {});
   route();

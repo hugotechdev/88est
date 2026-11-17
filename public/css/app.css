@@ -205,3 +205,146 @@ body.app { background: #F7F1EA; min-height: 100vh; }
 .spanel #sCats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .spanel #sCats .cat { width: auto; height: 60px; font-size: 10.5px; text-align: center; line-height: 1.15; overflow: hidden; }
 .spanel .seg label { font-size: 13px; padding: 9px 2px; }
+
+/* Ukurasa wa tangazo: sehemu mbili */
+.cta-more { display: none; }
+.dtop { display: none; }
+.hero-arrow { display: none; }
+.sim { margin: 0 -20px; }
+.sim h3 { padding: 0 20px; }
+.sim .hscroll { padding: 2px 20px 8px; }
+
+/* =========================================================
+   SKRINI PANA (kompyuta / tablet iliyolazwa) - muundo wake
+   ========================================================= */
+@media (min-width: 900px) {
+  body.app { overflow-x: hidden; }
+  .shell { max-width: 1280px; padding: 0 28px 60px; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+  .bg::after { background: linear-gradient(180deg, rgba(255,250,248,.30) 0%, rgba(255,250,248,.55) 40%, rgba(255,250,248,.72) 100%); }
+  .bnav { display: none; }
+  .top { display: none; }
+
+  /* Kichwa cha juu */
+  .dtop { display: block; position: sticky; top: 0; z-index: 200; border-radius: 0; border-width: 0 0 1px; background: rgba(255,255,255,.68); }
+  .dtop-in { max-width: 1280px; margin: 0 auto; padding: 12px 46px; display: flex; align-items: center; gap: 28px; }
+  .dlinks { display: flex; gap: 4px; flex: 1; justify-content: center; }
+  .dlinks a { padding: 9px 15px; border-radius: 22px; font-weight: 500; font-size: 14px; color: var(--char2); display: inline-flex; align-items: center; gap: 6px; transition: background .2s; }
+  .dlinks a i { font-size: 18px; }
+  .dlinks a:hover { background: rgba(255,255,255,.8); }
+  .dlinks a.on { background: var(--charcoal); color: #fff; }
+  .dlinks a.on i { color: var(--gold); }
+  .dright { display: flex; align-items: center; gap: 10px; }
+  .dpost { border-radius: 24px; padding: 10px 18px; }
+
+  /* Kutafuta katikati, kubwa */
+  .search-pill { max-width: 760px; margin: 34px auto 10px; padding: 12px 12px 12px 26px; }
+  .search-pill .t1 { font-size: 18px; }
+  .search-pill .t2 { font-size: 13px; }
+  .search-pill .go { width: 52px; height: 52px; font-size: 22px; }
+  .cats { justify-content: center; flex-wrap: wrap; padding: 14px 18px 4px; gap: 10px; }
+  .cats { gap: 8px; }
+  .cat { width: 88px; height: 76px; font-size: 12px; border-radius: 20px; }
+  .cat i { font-size: 27px; }
+  .cat:hover { transform: translateY(-2px); }
+  .deal-tabs { justify-content: center; padding-top: 12px; }
+  .deal-tabs button { padding: 9px 18px; font-size: 14px; }
+
+  /* Kadi kubwa: tatu kwa mstari */
+  .hero { padding: 14px 18px 34px; margin-bottom: -22px; gap: 14px; scroll-snap-type: x mandatory; perspective: none; }
+  .hcard { flex: 0 0 calc((100% - 28px) / 3); height: 400px; scroll-snap-align: start; transition: transform .3s, box-shadow .3s; box-shadow: 0 12px 24px rgba(60,40,20,.20); }
+  .hcard:hover { transform: translateY(-6px) !important; box-shadow: 0 26px 50px rgba(60,40,20,.32); }
+  .hcard .loc { font-size: 20px; }
+  .hero-arrow { display: flex; position: absolute; top: calc(50% - 26px); width: 48px; height: 48px; border-radius: 50%; align-items: center; justify-content: center; font-size: 22px; z-index: 5; color: var(--charcoal); background: rgba(255,255,255,.85); }
+  .hero-arrow.l { left: -8px; }
+  .hero-arrow.r { right: -8px; }
+  .sec-h { padding: 30px 18px 12px; }
+  .sec-h h2 { font-size: 22px; }
+
+  .mcard { flex: 0 0 230px; height: 200px; border-radius: 22px; }
+  .mcard .t { font-size: 14px; }
+  .mcard .p { font-size: 13.5px; }
+
+  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+  .lcard { padding: 8px 8px 12px; transition: transform .25s, box-shadow .25s; }
+  .lcard:hover { transform: translateY(-4px); box-shadow: 0 16px 34px rgba(60,40,20,.16); }
+  .lcard .t1 { font-size: 15px; }
+  .lcard .t2, .facts-inline { font-size: 13px; }
+  .lcard .pr { font-size: 15px; }
+
+  /* Kurasa nyingine */
+  .page-h { padding-top: 26px; }
+  .page-h h1 { font-size: 26px; }
+  .store-head { margin: 26px 18px 0; padding: 28px; display: grid; grid-template-columns: 1fr; }
+  #sellers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0 18px; }
+  #sellers .seller-row { margin: 0; }
+  #sellers .empty { grid-column: 1 / -1; }
+  .empty { max-width: 720px; margin: 10px auto; }
+  .install-bar { max-width: 720px; margin: 20px auto; }
+  .card.glass, .card[style] { max-width: 760px; margin-left: auto; margin-right: auto; }
+
+  /* Ukurasa wa tangazo: sehemu mbili */
+  .sheet { background: #FBF7F2; }
+  .sheet-inner { max-width: 1200px; padding: 26px 40px 60px; }
+  .gallery { height: 480px; border-radius: 30px; overflow: hidden; }
+  .gallery .g-count { bottom: 16px; }
+  .d-body { background: transparent; margin-top: 0; border-radius: 0; padding: 26px 0 0; }
+  .grab { display: none; }
+  .d-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 40px; align-items: start; }
+  .d-body h1 { font-size: 30px; }
+  .facts { grid-template-columns: repeat(3, 1fr); max-width: 560px; }
+  .amen { grid-template-columns: repeat(3, 1fr); }
+  .d-side { position: sticky; top: 24px; }
+  .cta { position: static; transform: none; width: auto; max-width: none; flex-wrap: wrap; padding: 22px; border-radius: 26px; gap: 12px; }
+  .cta .pr { flex: 0 0 100%; }
+  .cta .pr b { font-size: 24px; white-space: normal; }
+  .cta .pr small { font-size: 13px; }
+  .cta .wa-btn { flex: 1; justify-content: center; }
+  .cta-more { display: block; flex: 0 0 100%; }
+  .sim { margin: 0; }
+  .sim h3, .sim .hscroll { padding-left: 0; padding-right: 0; }
+
+  /* Paneli ya kutafuta pana zaidi */
+  .spanel { max-width: 640px; margin-top: 90px; }
+}
+@media (min-width: 1300px) {
+  .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+/* ===== Msaidizi wa 88EST ===== */
+.chat-fab { position: fixed; right: 16px; bottom: 96px; z-index: 150; height: 52px; padding: 0 18px 0 14px; border: 0; border-radius: 28px; background: linear-gradient(145deg, #2B2D31, #1A1B1F); color: #fff; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; box-shadow: 0 10px 26px rgba(31,33,37,.38); transition: transform .2s, opacity .2s; }
+.chat-fab i { font-size: 24px; color: var(--gold); }
+.chat-fab:hover { transform: translateY(-2px); }
+.chat-fab.hide-fab, body.sheet-open .chat-fab { opacity: 0; pointer-events: none; transform: scale(.8); }
+.chat-panel { position: fixed; z-index: 450; left: 0; right: 0; bottom: 0; height: 82vh; border-radius: 26px 26px 0 0; display: flex; flex-direction: column; background: rgba(251,247,242,.94); transform: translateY(105%); transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+.chat-panel.open { transform: none; }
+.chat-head { display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px 16px; border-bottom: 1px solid rgba(0,0,0,.06); }
+.chat-av { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(145deg, #DDB862, #B88C33); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.chat-x { width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(31,33,37,.06); font-size: 17px; color: var(--charcoal); display: flex; align-items: center; justify-content: center; }
+.chat-body { flex: 1; overflow-y: auto; padding: 14px 12px 6px; display: flex; flex-direction: column; }
+.bubble { max-width: 86%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.5; margin-bottom: 8px; white-space: pre-line; }
+.bubble.bot { background: #fff; border-bottom-left-radius: 6px; align-self: flex-start; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+.bubble.me { background: var(--charcoal); color: #fff; border-bottom-right-radius: 6px; align-self: flex-end; }
+.chat-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-weight: 600; font-size: 13px; color: var(--gold-d); }
+.chat-cards { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; margin-bottom: 4px; scrollbar-width: none; flex-shrink: 0; }
+.chat-cards::-webkit-scrollbar { display: none; }
+.chat-card { flex: 0 0 158px; background: #fff; border-radius: 16px; overflow: hidden; cursor: pointer; box-shadow: 0 4px 12px rgba(60,40,20,.10); }
+.chat-card img { width: 100%; height: 92px; object-fit: cover; }
+.chat-card .cc-b { padding: 8px 10px 10px; }
+.chat-card .cc-t { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-card .cc-p { font-size: 13px; font-weight: 700; }
+.chat-card .cc-p small { font-weight: 400; color: var(--grey); }
+.chat-card .cc-l { font-size: 11.5px; color: var(--grey); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+.chat-chips button { border: 1px solid rgba(201,162,74,.5); background: rgba(246,238,219,.7); color: #6E5418; border-radius: 18px; padding: 7px 12px; font-size: 12.5px; font-weight: 600; }
+.chat-in { display: flex; gap: 8px; padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(0,0,0,.06); }
+.chat-in input { flex: 1; border: 1px solid var(--line); background: #fff; border-radius: 24px; padding: 11px 16px; outline: none; font-size: 15px; }
+.chat-in input:focus { border-color: var(--gold); }
+.chat-in .go { border: 0; width: 44px; height: 44px; }
+.typing span { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--grey2); margin-right: 3px; animation: tp 1s infinite; }
+.typing span:nth-child(2) { animation-delay: .15s; }
+.typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes tp { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+@media (min-width: 900px) {
+  .chat-fab { bottom: 26px; right: 26px; height: 56px; font-size: 15px; }
+  .chat-panel { left: auto; right: 26px; bottom: 26px; width: 410px; height: min(640px, calc(100vh - 110px)); border-radius: 26px; }
+}

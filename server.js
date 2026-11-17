@@ -9,6 +9,8 @@ const app = new Router();
 require('./server/routes-public')(app);
 require('./server/routes-seller')(app);
 require('./server/routes-admin')(app);
+require('./server/routes-super')(app);
+require('./server/routes-agent')(app);
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');

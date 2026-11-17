@@ -1,4 +1,4 @@
-// Vitu vya kusaidia: namba za simu, SMS, uthibitisho wa taarifa
+// Vitu vya kusaidia: namba za simu, kutuma email, uthibitisho wa taarifa
 const { httpError } = require('./router');
 
 const CATEGORIES = ['nyumba', 'apartment', 'chumba', 'kiwanja', 'shamba', 'frame', 'ofisi', 'ghala', 'short_stay', 'ukumbi', 'mradi'];
@@ -63,6 +63,10 @@ function isEmail(e) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e || ''));
 }
 
+function isAdmin(u) {
+  return !!u && (u.role === 'admin' || u.role === 'superadmin');
+}
+
 function isPro(u) {
   return u && u.plan === 'pro' && u.pro_until && new Date(u.pro_until) > new Date();
 }
@@ -107,35 +111,51 @@ function selfUser(u) {
   };
 }
 
-// Kutuma SMS kupitia Beem Africa (ukiweka BEEM_API_KEY na BEEM_SECRET)
-async function sendSMS(phone, message) {
-  const key = process.env.BEEM_API_KEY;
-  const secret = process.env.BEEM_SECRET;
-  if (!key || !secret) {
-    console.log('[SMS haijawekwa] Kwa ' + phone + ': ' + message);
-    return false;
-  }
+// ===== Kutuma email =====
+// Njia 1 (bure): faili la PHP kwenye cPanel yako (MAIL_RELAY_URL + MAIL_RELAY_KEY)
+// Njia 2: Brevo (BREVO_API_KEY + MAIL_FROM)
+// Railway Hobby inazuia SMTP, ndiyo maana tunatumia HTTPS.
+function emailHtml(title, bodyHtml) {
+  return `<!doctype html><html><body style="margin:0;background:#F4F4F2;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F4F2;padding:24px 0"><tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:16px;overflow:hidden">
+<tr><td style="background:#1F2125;padding:20px 24px;font-size:24px;font-weight:bold;color:#F4F4F2;letter-spacing:1px">88<span style="color:#C9A24A">EST</span>
+<div style="font-size:12px;color:#9A9EA6;font-weight:normal;letter-spacing:0">Real estate marketplace</div></td></tr>
+<tr><td style="padding:24px;color:#1F2125;font-size:15px;line-height:1.6"><h2 style="margin:0 0 12px;font-size:19px">${esc(title)}</h2>${bodyHtml}</td></tr>
+<tr><td style="padding:14px 24px;background:#F4F4F2;color:#6B7078;font-size:12px">88EST · Huduma ya HUGO TECH</td></tr>
+</table></td></tr></table></body></html>`;
+}
+
+async function sendEmail(to, subject, title, bodyHtml) {
+  if (!to) return false;
+  const html = emailHtml(title, bodyHtml);
+  const from = process.env.MAIL_FROM || 'no-reply@hugotech.co.tz';
   try {
-    const r = await fetch('https://apisms.beem.africa/v1/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Basic ' + Buffer.from(key + ':' + secret).toString('base64'),
-      },
-      body: JSON.stringify({
-        source_addr: process.env.BEEM_SENDER || 'INFO',
-        schedule_time: '',
-        encoding: 0,
-        message,
-        recipients: [{ recipient_id: 1, dest_addr: phone }],
-      }),
-    });
-    if (!r.ok) console.log('SMS imeshindwa:', r.status, await r.text());
-    return r.ok;
+    if (process.env.MAIL_RELAY_URL) {
+      const r = await fetch(process.env.MAIL_RELAY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Relay-Key': process.env.MAIL_RELAY_KEY || '' },
+        body: JSON.stringify({ key: process.env.MAIL_RELAY_KEY || '', to, subject, html }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) console.log('Email (cPanel) imeshindwa:', r.status, JSON.stringify(j));
+      return r.ok && !!j.ok;
+    }
+    if (process.env.BREVO_API_KEY) {
+      const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', accept: 'application/json', 'api-key': process.env.BREVO_API_KEY },
+        body: JSON.stringify({ sender: { name: '88EST', email: from }, to: [{ email: to }], subject, htmlContent: html }),
+      });
+      if (!r.ok) console.log('Email (Brevo) imeshindwa:', r.status, await r.text());
+      return r.ok;
+    }
   } catch (e) {
-    console.log('SMS imeshindwa:', e.message);
+    console.log('Email imeshindwa:', e.message);
     return false;
   }
+  console.log('[Email haijawekwa] Kwa ' + to + ': ' + subject);
+  return false;
 }
 
 // Kuzuia mtu kujaribu mara nyingi sana (mf. kubahatisha password)
@@ -159,6 +179,6 @@ function esc(s) {
 
 module.exports = {
   CATEGORIES, DEALS, PERIODS, ACCOUNT_TYPES, AMENITIES, REPORT_REASONS,
-  normPhone, slugify, uniqueSlug, str, int, num, bool, need, isEmail, isPro,
-  publicSeller, selfUser, sendSMS, rateLimit, clientIp, esc,
+  normPhone, slugify, uniqueSlug, str, int, num, bool, need, isEmail, isPro, isAdmin,
+  publicSeller, selfUser, sendEmail, rateLimit, clientIp, esc,
 };

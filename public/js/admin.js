@@ -4,7 +4,8 @@
   const esc = E.esc;
   const root = $('#root');
   E.tokenKey = 'est_admin';
-  const S = { stats: {} };
+  const S = { stats: {}, me: null };
+  const isSuper = () => S.me && S.me.role === 'superadmin';
 
   const TABS = [
     ['/', 'ti-layout-dashboard', 'Muhtasari'],
@@ -15,7 +16,7 @@
     ['/reports', 'ti-flag', 'Ripoti', 'reports'],
     ['/ratings', 'ti-star', 'Maoni'],
     ['/map', 'ti-map', 'Ramani'],
-    ['/settings', 'ti-settings', 'Mipangilio'],
+    ['/super', 'ti-shield-star', 'Super admin', null, true],
   ];
 
   function login() {
@@ -31,7 +32,7 @@
       E.busy(btn, true);
       try {
         const r = await E.api('/api/auth/login', { body: E.formData(e.target), token: '' });
-        if (r.user.role !== 'admin') throw new Error('Akaunti hii si ya admin');
+        if (r.user.role !== 'admin' && r.user.role !== 'superadmin') throw new Error('Akaunti hii si ya admin');
         localStorage.setItem('est_admin', r.token);
         route();
       } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
@@ -39,14 +40,17 @@
   }
 
   async function shell(active) {
-    try { S.stats = await E.api('/api/admin/stats'); } catch (e) {
-      if (e.status === 401 || e.status === 403) { localStorage.removeItem('est_admin'); login(); return null; }
+    try {
+      if (!S.me) S.me = (await E.api('/api/me')).user;
+      S.stats = await E.api('/api/admin/stats');
+    } catch (e) {
+      if (e.status === 401 || e.status === 403) { localStorage.removeItem('est_admin'); S.me = null; login(); return null; }
     }
     root.innerHTML = `
-      <div class="p-top"><a href="/" target="_blank">${E.logo(true)}</a><div class="row gap">${E.langButton('dark')}<div class="who"><b>Admin</b><a href="#" id="out" style="color:var(--gold)">Toka</a></div></div></div>
-      <nav class="p-tabs">${TABS.map(([h, i, t, k]) => `<a href="#${h}" class="${active === h ? 'on' : ''}"><i class="ti ${i}"></i>${t}${k && S.stats[k] ? ` <span class="cnt">${S.stats[k]}</span>` : ''}</a>`).join('')}</nav>
+      <div class="p-top"><a href="/" target="_blank">${E.logo(true)}</a><div class="row gap">${E.langButton('dark')}<div class="who"><b>${esc(S.me ? S.me.name : 'Admin')}</b>${isSuper() ? 'Super admin · ' : ''}<a href="#" id="out" style="color:var(--gold)">Toka</a></div></div></div>
+      <nav class="p-tabs">${TABS.filter((t) => !t[4] || isSuper()).map(([h, i, t, k]) => `<a href="#${h}" class="${active === h ? 'on' : ''}"><i class="ti ${i}"></i>${t}${k && S.stats[k] ? ` <span class="cnt">${S.stats[k]}</span>` : ''}</a>`).join('')}</nav>
       <main class="p-main" id="main"></main>`;
-    $('#out').onclick = (e) => { e.preventDefault(); localStorage.removeItem('est_admin'); login(); };
+    $('#out').onclick = (e) => { e.preventDefault(); localStorage.removeItem('est_admin'); S.me = null; login(); };
     document.title = (TABS.find((t) => t[0] === active) || [0, 0, 'Admin'])[2] + ' | Admin 88EST';
     return $('#main');
   }
@@ -194,7 +198,7 @@
       <div class="hd"><div class="row gap" style="min-width:0"><div class="avatar" style="width:46px;height:46px;font-size:17px">${u.avatar_id ? `<img src="${E.img(u.avatar_id)}">` : esc((u.business_name || u.name)[0])}</div>
         <div style="min-width:0"><b>${esc(u.business_name || u.name)}</b>${u.business_name ? `<span class="muted small"> · ${esc(u.name)}</span>` : ''}
         <div class="small muted">${esc(E.ACCT[u.account_type])} · ${esc(E.place(u))}</div>
-        <div class="small">${esc(E.phoneLocal(u.phone))} ${u.phone_verified ? '<i class="ti ti-check gold" title="Simu imethibitishwa"></i>' : `<span class="badge st-pending">Simu haijathibitishwa${u.otp_code ? ' · Code: ' + esc(u.otp_code) : ''}</span>`} · ${esc(u.email || '')}</div></div></div>
+        <div class="small">${esc(E.phoneLocal(u.phone))} · ${esc(u.email || '')} ${u.email_verified ? '<i class="ti ti-check gold" title="Email imethibitishwa"></i>' : `<span class="badge st-pending">Email haijathibitishwa${u.otp_code ? ' · Code: ' + esc(u.otp_code) : ''}</span>`}</div></div></div>
         <div style="text-align:right">${E.badges(u)}${u.status === 'suspended' ? '<span class="badge st-rejected">Amesimamishwa</span>' : ''}</div></div>
       <div class="tiny muted mt-s">Alijiunga ${E.date(u.created_at)} · Matangazo ${u.listing_count} (hewani ${u.live_count})${u.pro ? ' · Pro mpaka ' + E.date(u.pro_until) : ''}</div>
       <div class="acts">
@@ -202,7 +206,7 @@
         <a class="btn btn-ghost btn-sm" href="#/listings?status=&user=${u.id}"><i class="ti ti-list"></i> Matangazo</a>
         <button class="btn btn-ghost btn-sm" data-a="level" data-id="${u.id}" data-lv="${u.verify_level}"><i class="ti ti-rosette-discount-check"></i> Ngazi (${u.verify_level})</button>
         <button class="btn btn-ghost btn-sm" data-a="pro" data-id="${u.id}"><i class="ti ti-crown"></i> Pro</button>
-        ${!u.phone_verified ? `<button class="btn btn-ghost btn-sm" data-a="phone" data-id="${u.id}"><i class="ti ti-device-mobile-check"></i> Thibitisha simu</button>` : ''}
+        ${!u.email_verified ? `<button class="btn btn-ghost btn-sm" data-a="email" data-id="${u.id}"><i class="ti ti-mail-check"></i> Thibitisha email</button>` : ''}
         <button class="btn btn-ghost btn-sm" data-a="reset" data-id="${u.id}"><i class="ti ti-key"></i> Password mpya</button>
         <a class="btn btn-wa btn-sm" href="https://wa.me/${esc(u.whatsapp)}" target="_blank"><i class="ti ti-brand-whatsapp"></i></a>
         ${u.status === 'suspended' ? `<button class="btn btn-gold btn-sm" data-a="activate" data-id="${u.id}">Rudisha</button>` : `<button class="btn btn-danger btn-sm" data-a="suspend" data-id="${u.id}"><i class="ti ti-ban"></i> Simamisha</button>`}
@@ -230,7 +234,7 @@
         if (r) E.modal(`<h3>Password mpya</h3><div class="card" style="background:var(--off);font-size:20px;text-align:center"><b>${esc(r.password)}</b></div><p class="small muted">Mtumie muuzaji kwa WhatsApp au SMS.</p>`);
         return;
       }
-      const map = { phone: ['phone_verified', 'Simu imethibitishwa'], suspend: ['suspend', 'Amesimamishwa'], activate: ['activate', 'Amerudishwa'] };
+      const map = { email: ['email_verified', 'Email imethibitishwa'], suspend: ['suspend', 'Amesimamishwa'], activate: ['activate', 'Amerudishwa'] };
       if (a === 'suspend' && !(await E.confirm('Simamisha muuzaji huyu? Matangazo yake hayataonekana.'))) return;
       if (map[a] && (await act(url, { action: map[a][0] }, map[a][1]))) route(true);
     };
@@ -338,13 +342,132 @@
     });
   }
 
-  // ===== Mipangilio =====
-  async function settings() {
-    const main = await shell('/settings');
+  // ===== SUPER ADMIN =====
+  const SUBS = [['biashara', 'ti-chart-bar', 'Biashara'], ['timu', 'ti-users-group', 'Timu ya admin'], ['kumbukumbu', 'ti-history', 'Kumbukumbu'], ['maswali', 'ti-message-chatbot', 'Maswali ya wateja'], ['ai', 'ti-sparkles', 'Msaidizi wa AI'], ['mipangilio', 'ti-settings', 'Bei na mipangilio']];
+  const bars = (items, valKey, labelFn, fmtFn) => {
+    const max = Math.max(1, ...items.map((x) => x[valKey]));
+    return `<div class="bars">${items.map((x) => `<div class="bar" title="${esc(labelFn(x))}: ${esc(fmtFn(x[valKey]))}"><span style="height:${Math.max(2, (x[valKey] / max) * 100)}%"></span><em>${esc(labelFn(x, true))}</em></div>`).join('')}</div>`;
+  };
+
+  async function superPage(params) {
+    const main = await shell('/super');
     if (!main) return;
+    if (!isSuper()) { main.innerHTML = '<div class="empty"><i class="ti ti-lock"></i>Sehemu hii ni ya super admin tu.</div>'; return; }
+    const sub = params.t || 'biashara';
+    main.innerHTML = `<div class="row between mb wrap gap"><h1 style="margin:0"><i class="ti ti-shield-star gold"></i> Super admin</h1></div>
+      <div class="pill-tabs" id="subs">${SUBS.map(([k, i, t]) => `<button class="${sub === k ? 'on' : ''}" data-s="${k}"><i class="ti ${i}"></i> ${t}</button>`).join('')}</div>
+      <div id="sb"><div class="empty"><span class="spin"></span></div></div>`;
+    $('#subs').onclick = (e) => { const b = e.target.closest('[data-s]'); if (b) location.hash = '#/super?t=' + b.dataset.s; };
+    const sb = $('#sb');
+    if (sub === 'biashara') return superBiz(sb);
+    if (sub === 'timu') return superStaff(sb);
+    if (sub === 'kumbukumbu') return superLogs(sb, params);
+    if (sub === 'maswali') return superAgentLogs(sb);
+    if (sub === 'ai') return superAI(sb);
+    return superSettings(sb);
+  }
+
+  async function superBiz(sb) {
+    const o = await E.api('/api/super/overview');
+    const m = o.money;
+    const change = m.last_month ? Math.round(((m.this_month - m.last_month) / m.last_month) * 100) : null;
+    const box = (i, n, t) => `<div class="stat"><i class="ti ${i}"></i><b>${n}</b><span>${t}</span></div>`;
+    sb.innerHTML = `
+      <div class="stats">${box('ti-cash', E.moneyShort(m.this_month), 'Mapato mwezi huu')}${box('ti-calendar', E.moneyShort(m.last_month), 'Mwezi uliopita')}${box('ti-coins', E.moneyShort(m.total), 'Mapato yote')}${box('ti-crown', o.users.pro, 'Wenye Pro sasa')}${box('ti-receipt', m.payments, 'Malipo yaliyokubaliwa')}${box('ti-clock', m.pending, 'Malipo yanasubiri')}</div>
+      ${change !== null ? `<p class="small muted mt-s">Mwezi huu ni ${change >= 0 ? '+' : ''}${change}% ukilinganisha na mwezi uliopita.</p>` : ''}
+      <div class="card mt"><h3>Mapato kwa mwezi (miezi 12)</h3>${o.monthly.length ? bars(o.monthly, 'amount', (x, s) => (s ? x.month.slice(5) : x.month), (v) => E.money(v)) : '<p class="muted small">Bado hakuna malipo yaliyokubaliwa.</p>'}</div>
+      <div class="card"><h3>Ukuaji: siku 30 zilizopita</h3>
+        <div class="grid-3c">
+          <div><div class="small muted">Wauzaji wapya (${o.users.new30})</div>${bars(o.daily, 'sellers', (x, s) => (s ? '' : x.day), (v) => v)}</div>
+          <div><div class="small muted">Matangazo mapya (${o.listings.new30})</div>${bars(o.daily, 'listings', (x, s) => (s ? '' : x.day), (v) => v)}</div>
+          <div><div class="small muted">Maswali kwa msaidizi (${o.agent.total})</div>${bars(o.daily, 'chats', (x, s) => (s ? '' : x.day), (v) => v)}</div>
+        </div></div>
+      <div class="stats mt">${box('ti-users', o.users.sellers, 'Wauzaji wote')}${box('ti-rosette-discount-check', o.users.verified, 'Verified')}${box('ti-home-check', o.listings.live, 'Matangazo hewani')}${box('ti-eye', o.listings.views, 'Walioona')}${box('ti-phone', o.listings.calls, 'Simu')}${box('ti-brand-whatsapp', o.listings.wa, 'WhatsApp')}</div>
+      <div class="grid-2c mt">
+        <div class="card" style="margin:0"><h3>Mikoa yenye matangazo mengi</h3>${o.regions.map((r) => `<div class="kv2"><span>${esc(r.region || '-')}</span><b>${r.n}</b></div>`).join('') || '<p class="muted small">Bado.</p>'}</div>
+        <div class="card" style="margin:0"><h3>Aina za mali</h3>${o.categories.map((r) => `<div class="kv2"><span>${esc(E.cat(r.category).label)}</span><b>${r.n}</b></div>`).join('') || '<p class="muted small">Bado.</p>'}</div>
+      </div>
+      <div class="card mt"><h3><i class="ti ti-sparkles gold"></i> Msaidizi (siku 30)</h3>
+        <p class="small">Maswali ${o.agent.total} · yaliyojibiwa bila AI (bure): <b>${o.agent.local}</b> · yaliyotumia AI: <b>${o.agent.ai}</b> · leo: ${o.agent.today}</p>
+        <p class="small muted" style="margin:0">AI: ${o.ai_key ? `<span class="badge st-approved">Imeunganishwa</span> (${esc(o.ai_model)})` : '<span class="badge st-pending">Haijaunganishwa</span> weka ANTHROPIC_API_KEY kwenye Railway'}</p></div>`;
+  }
+
+  async function superStaff(sb) {
+    const r = await E.api('/api/super/staff');
+    sb.innerHTML = `<div class="card"><div class="row between"><h3 style="margin:0">Timu ya admin</h3><button class="btn btn-gold btn-sm" id="addStaff"><i class="ti ti-user-plus"></i> Ongeza admin</button></div>
+      <p class="small muted">Admin wanaweza kupitisha matangazo, wauzaji, uthibitisho, malipo na ripoti. Hawawezi kuona sehemu hii ya super admin wala kubadilisha bei.</p></div>
+      ${r.items.map((u) => `<div class="a-item"><div class="hd"><div><b>${esc(u.name)}</b> ${u.role === 'superadmin' ? '<span class="badge badge-dark">SUPER ADMIN</span>' : '<span class="badge badge-light">Admin</span>'} ${u.status === 'suspended' ? '<span class="badge st-rejected">Amesimamishwa</span>' : ''}
+        <div class="small muted">${esc(E.phoneLocal(u.phone))}${u.email ? ' · ' + esc(u.email) : ''}</div>
+        <div class="tiny muted">Vitendo ${u.actions}${u.last_action ? ' · mwisho ' + E.timeAgo(u.last_action) : ''}</div></div></div>
+        ${u.role === 'admin' ? `<div class="acts"><button class="btn btn-ghost btn-sm" data-a="reset_password" data-id="${u.id}"><i class="ti ti-key"></i> Password mpya</button>
+          ${u.status === 'suspended' ? `<button class="btn btn-gold btn-sm" data-a="activate" data-id="${u.id}">Rudisha</button>` : `<button class="btn btn-ghost btn-sm" data-a="suspend" data-id="${u.id}"><i class="ti ti-ban"></i> Simamisha</button>`}
+          <a class="btn btn-ghost btn-sm" href="#/super?t=kumbukumbu&q=${encodeURIComponent(u.name)}"><i class="ti ti-history"></i> Vitendo vyake</a>
+          <button class="btn btn-danger btn-sm" data-a="remove" data-id="${u.id}"><i class="ti ti-trash"></i> Ondoa</button></div>` : ''}</div>`).join('')}`;
+    $('#addStaff').onclick = () => {
+      const m = E.modal(`<h2>Ongeza admin</h2><form id="sf"><div class="field"><input class="input" name="name" placeholder="Jina kamili *" required></div>
+        <div class="field"><input class="input" name="phone" inputmode="tel" placeholder="Namba ya simu *" required></div>
+        <div class="field"><input class="input" name="email" placeholder="Email"></div>
+        <div class="field"><input class="input" name="password" placeholder="Password (acha wazi tutengeneze)"></div>
+        <button class="btn btn-gold btn-block">Ongeza</button></form>`);
+      m.querySelector('#sf').onsubmit = async (e) => {
+        e.preventDefault();
+        const r2 = await act('/api/super/staff', E.formData(e.target));
+        if (r2) E.modal(`<h2>Admin ameongezwa</h2><div class="card" style="background:var(--off)"><div>Simu: <b>${esc(E.phoneLocal(r2.user.phone))}</b></div><div>Password: <b>${esc(r2.password)}</b></div><div class="small mt-s">Aingie hapa: ${esc(location.origin)}/admin.html</div></div>`);
+        route(true);
+      };
+    };
+    sb.onclick = async (e) => {
+      const b = e.target.closest('[data-a]');
+      if (!b) return;
+      if (b.dataset.a === 'remove' && !(await E.confirm('Ondoa admin huyu kabisa?'))) return;
+      const r2 = await act('/api/super/staff/' + b.dataset.id, { action: b.dataset.a }, 'Imefanyika');
+      if (r2 && r2.password) E.modal(`<h3>Password mpya</h3><div class="card" style="background:var(--off);font-size:20px;text-align:center"><b>${esc(r2.password)}</b></div>`);
+      if (r2) setTimeout(() => route(true), r2.password ? 0 : 300);
+    };
+  }
+
+  async function superLogs(sb, params) {
+    const r = await E.api('/api/super/logs?q=' + encodeURIComponent(params.q || ''));
+    sb.innerHTML = `<div class="filters"><input class="input" id="lq" placeholder="Tafuta admin, kitendo au mlengwa" value="${esc(params.q || '')}"></div>
+      <div style="overflow-x:auto"><table class="a-table"><thead><tr><th>Lini</th><th>Admin</th><th>Kitendo</th><th>Mlengwa</th><th>Maelezo</th></tr></thead><tbody>
+      ${r.items.map((x) => `<tr><td class="tiny">${E.timeAgo(x.created_at)}</td><td>${esc(x.admin_name)}</td><td><span class="badge badge-light">${esc(x.action)}</span></td><td>${esc(x.target || '')}</td><td class="small muted">${esc(x.details || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Bado hakuna kumbukumbu.</td></tr>'}
+      </tbody></table></div>`;
+    $('#lq').onkeydown = (e) => { if (e.key === 'Enter') location.hash = '#/super?t=kumbukumbu&q=' + encodeURIComponent(e.target.value); };
+  }
+
+  async function superAgentLogs(sb) {
+    const r = await E.api('/api/super/agent-logs');
+    const src = { local: ['Bure', 'st-approved'], faq: ['Jibu tayari', 'st-approved'], ai: ['AI', 'st-pending'], fallback: ['Hakuelewa', 'st-rejected'] };
+    sb.innerHTML = `<p class="small muted">Haya ndiyo wateja wanayouliza. "Hakuelewa" inaonyesha maswali unayoweza kuyaongeza kwenye "Majibu ya haraka" (sehemu ya Msaidizi wa AI).</p>
+      ${r.items.map((x) => `<div class="a-item"><div class="hd"><b class="small">${esc(x.question)}</b><span class="badge ${(src[x.source] || ['', ''])[1]}">${(src[x.source] || [x.source])[0]}</span></div>
+        <div class="small muted mt-s">${esc(x.reply)}</div><div class="tiny muted">${E.timeAgo(x.created_at)}${x.results != null ? ' · matangazo ' + x.results : ''}</div></div>`).join('') || '<div class="empty">Bado hakuna maswali.</div>'}`;
+  }
+
+  async function superAI(sb) {
+    const [s, o] = await Promise.all([E.api('/api/admin/settings'), E.api('/api/super/overview')]);
+    sb.innerHTML = `<form id="aif" class="form-sec">
+      <h3><i class="ti ti-sparkles gold"></i> Msaidizi wa wateja</h3>
+      <p class="small muted">Msaidizi anajibu kwa ufupi, anatambua mteja anataka nini na kumwonyesha matangazo. Maswali mengi yanajibiwa bila AI (bure). AI inatumika tu asipoelewa.</p>
+      <div class="grid2">
+        <div class="field"><label>Msaidizi</label><select class="input" name="agent_enabled"><option value="1" ${s.agent_enabled !== '0' ? 'selected' : ''}>Amewashwa</option><option value="0" ${s.agent_enabled === '0' ? 'selected' : ''}>Amezimwa</option></select></div>
+        <div class="field"><label>Matumizi ya AI</label><select class="input" name="agent_ai_enabled"><option value="1" ${s.agent_ai_enabled !== '0' ? 'selected' : ''}>Ruhusu AI</option><option value="0" ${s.agent_ai_enabled === '0' ? 'selected' : ''}>Bila AI (bure kabisa)</option></select></div>
+      </div>
+      <div class="field"><label>Kikomo cha maswali ya AI kwa mteja kwa siku</label><input class="input" name="agent_daily_limit" value="${esc(s.agent_daily_limit || '20')}" inputmode="numeric"></div>
+      <div class="field"><label>Majibu ya haraka (bila AI)</label>
+        <textarea class="input" name="agent_faq" style="min-height:160px" placeholder="maneno, muhimu: jibu&#10;mfano:&#10;mkopo, benki: Kwa sasa hatutoi mikopo, lakini developers wengine wana mpango wa malipo kwa awamu.&#10;ofisi yenu, mnapatikana wapi: Ofisi ya HUGO TECH iko ...">${esc(s.agent_faq || '')}</textarea>
+        <div class="hint">Kila mstari: maneno ya kutambua (yakitenganishwa kwa koma), kisha <b>:</b>, kisha jibu. Mteja akitumia neno lolote kati ya hayo, anapata jibu hilo bure.</div></div>
+      <p class="small">AI: ${o.ai_key ? `<span class="badge st-approved">Imeunganishwa</span> ${esc(o.ai_model)}` : '<span class="badge st-pending">Haijaunganishwa</span> Weka <code>ANTHROPIC_API_KEY</code> kwenye Variables za Railway'}</p>
+      <button class="btn btn-gold">Hifadhi</button></form>`;
+    $('#aif').onsubmit = async (e) => {
+      e.preventDefault();
+      try { await E.api('/api/admin/settings', { method: 'PUT', body: E.formData(e.target) }); E.toast('Imehifadhiwa', 'ok'); } catch (err) { E.toast(err.message, 'err'); }
+    };
+  }
+
+  async function superSettings(sb) {
     const s = await E.api('/api/admin/settings');
-    const f = (k, label, hint = '', type = 'input') => `<div class="field"><label>${label}</label>${type === 'textarea' ? `<textarea class="input" name="${k}">${esc(s[k])}</textarea>` : `<input class="input" name="${k}" value="${esc(s[k])}">`}${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
-    main.innerHTML = `<h1>Mipangilio</h1><form id="sf" class="form-sec">
+    const f = (k, label, hint = '', type = 'input') => `<div class="field"><label>${label}</label>${type === 'textarea' ? `<textarea class="input" name="${k}">${esc(s[k] || '')}</textarea>` : `<input class="input" name="${k}" value="${esc(s[k] || '')}">`}${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
+    sb.innerHTML = `<form id="sf" class="form-sec">
       <div class="grid2">${f('free_limit', 'Matangazo ya bure (idadi)')}${f('pro_limit', 'Matangazo ya Pro (idadi)')}</div>
       <div class="grid2">${f('pro_price_month', 'Bei ya Pro kwa mwezi (TZS)')}${f('featured_price_week', 'Bei ya tangazo maalum kwa wiki (TZS)')}</div>
       <div class="grid2">${f('support_phone', 'Namba ya msaada', 'Mfumo: 255XXXXXXXXX')}${f('support_email', 'Email ya msaada')}</div>
@@ -371,7 +494,8 @@
       if (path === '/reports') return await reports();
       if (path === '/ratings') return await ratings();
       if (path === '/map') return await mapPage();
-      if (path === '/settings') return await settings();
+      if (path === '/super') return await superPage(params);
+      if (path === '/settings') { location.hash = '#/super?t=mipangilio'; return; }
       return await overview();
     } catch (e) {
       if (e.status === 401 || e.status === 403) { localStorage.removeItem('est_admin'); return login(); }

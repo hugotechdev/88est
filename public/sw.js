@@ -1,6 +1,6 @@
 // Service worker: inafanya app ifunguke haraka na iwekwe kwenye simu
-const VERSION = '88est-v3';
-const SHELL = ['/', '/index.html', '/css/style.css', '/css/app.css', '/js/common.js', '/js/locations.js', '/js/app.js', '/icon.svg', '/img-placeholder.svg', '/bg/bg-mobile.jpg'];
+const VERSION = '88est-v5';
+const SHELL = ['/', '/index.html', '/css/style.css', '/css/app.css', '/js/common.js', '/js/locations.js', '/js/app.js', '/js/agent.js', '/icon.svg', '/img-placeholder.svg', '/bg/bg-mobile.jpg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

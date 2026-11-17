@@ -7,7 +7,7 @@ const U = require('./util');
 
 async function limits(user) {
   const s = await db.getSettings();
-  if (user.role === 'admin') return { max: 100000, used: 0 };
+  if (U.isAdmin(user)) return { max: 100000, used: 0 };
   const max = U.isPro(user) ? Number(s.pro_limit) : Number(s.free_limit);
   const r = await db.one("SELECT count(*) AS n FROM listings WHERE user_id = $1 AND status IN ('pending', 'approved', 'hidden')", [user.id]);
   return { max, used: Number(r.n) };
@@ -29,7 +29,10 @@ async function sendOtp(u) {
   }
   const code = newOtp();
   await db.q("UPDATE users SET otp_code = $1, otp_expires = now() + interval '30 minutes', otp_sent_at = now() WHERE id = $2", [code, u.id]);
-  return U.sendSMS(u.phone, 'Code yako ya 88EST ni ' + code + '. Itaisha baada ya dakika 30.');
+  return U.sendEmail(u.email, 'Code yako ya 88EST: ' + code, 'Code yako ya uthibitisho',
+    `<p>Habari ${U.esc(u.name)},</p><p>Tumia code hii kwenye 88EST:</p>
+     <div style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#1F2125;background:#F6EEDB;border-radius:12px;padding:14px;text-align:center">${code}</div>
+     <p style="color:#6B7078;font-size:13px">Code itaisha baada ya dakika 30. Kama hukuomba code hii, puuza ujumbe huu.</p>`);
 }
 
 // Taarifa za tangazo kutoka kwenye fomu - zinahakikiwa hapa
@@ -115,10 +118,10 @@ module.exports = function (app) {
       [b.account_type, name, businessName, slug, phone, email.toLowerCase(), hashPassword(b.password), whatsapp,
         U.str(b.region, 60), U.str(b.district, 60), U.str(b.ward, 80), U.str(b.service_areas, 300)]
     );
-    let smsSent = false;
-    try { smsSent = await sendOtp(u); } catch (e) { /* si tatizo */ }
+    let emailSent = false;
+    try { emailSent = await sendOtp(u); } catch (e) { /* si tatizo */ }
     const fresh = await db.one('SELECT * FROM users WHERE id = $1', [u.id]);
-    res.json({ token: sign({ uid: u.id }), sms_sent: smsSent, ...(await meResponse(fresh)) });
+    res.json({ token: sign({ uid: u.id }), email_sent: emailSent, ...(await meResponse(fresh)) });
   });
 
   // ===== Kuingia =====
@@ -132,6 +135,40 @@ module.exports = function (app) {
     }
     if (u.status === 'suspended') throw httpError(403, 'Akaunti yako imesimamishwa. Wasiliana na 88EST.');
     res.json({ token: sign({ uid: u.id }), ...(await meResponse(u)) });
+  });
+
+  // ===== Umesahau password: code inatumwa kwenye email =====
+  app.post('/api/auth/forgot', async (req, res) => {
+    const phone = U.normPhone(req.body.phone);
+    U.need(phone, 'Weka namba ya simu uliyosajilia');
+    U.rateLimit('forgot:' + phone, 4, 3600e3);
+    U.rateLimit('forgotip:' + U.clientIp(req), 10, 3600e3);
+    const u = await db.one("SELECT * FROM users WHERE phone = $1 AND status = 'active'", [phone]);
+    let masked = null;
+    if (u && u.email) {
+      const code = newOtp();
+      await db.q("UPDATE users SET otp_code = $1, otp_expires = now() + interval '30 minutes', otp_sent_at = now() WHERE id = $2", [code, u.id]);
+      await U.sendEmail(u.email, 'Badilisha password ya 88EST: ' + code, 'Badilisha password yako',
+        `<p>Habari ${U.esc(u.name)},</p><p>Mtu ameomba kubadilisha password ya akaunti yako ya 88EST. Tumia code hii:</p>
+         <div style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#1F2125;background:#F6EEDB;border-radius:12px;padding:14px;text-align:center">${code}</div>
+         <p style="color:#6B7078;font-size:13px">Code itaisha baada ya dakika 30. Kama si wewe, puuza ujumbe huu; password yako haijabadilika.</p>`);
+      const [nm, dom] = u.email.split('@');
+      masked = nm.slice(0, 2) + '***@' + dom;
+    }
+    // Jibu linafanana hata kama namba haipo (kwa usalama)
+    res.json({ ok: true, message: masked ? 'Tumetuma code kwenye ' + masked + '. Angalia pia Spam.' : 'Kama namba hii imesajiliwa, code imetumwa kwenye email yake.' });
+  });
+
+  app.post('/api/auth/reset', async (req, res) => {
+    const phone = U.normPhone(req.body.phone);
+    U.need(phone, 'Weka namba ya simu');
+    U.rateLimit('reset:' + phone, 8, 15 * 60e3);
+    const u = await db.one("SELECT * FROM users WHERE phone = $1 AND status = 'active'", [phone]);
+    const code = String(req.body.code || '').trim();
+    U.need(u && u.otp_code && code === u.otp_code && new Date(u.otp_expires) > new Date(), 'Code si sahihi au imeisha muda');
+    U.need(String(req.body.password || '').length >= 6, 'Password mpya iwe na herufi 6 au zaidi');
+    const nu = await db.one('UPDATE users SET password_hash = $1, otp_code = NULL, email_verified = true WHERE id = $2 RETURNING *', [hashPassword(req.body.password), u.id]);
+    res.json({ token: sign({ uid: nu.id }), ...(await meResponse(nu)) });
   });
 
   // ===== Wasifu wangu =====
@@ -182,13 +219,13 @@ module.exports = function (app) {
     res.json({ ok: true });
   });
 
-  // ===== OTP ya simu =====
+  // ===== OTP ya email =====
   app.post('/api/otp/send', requireAuth, async (req, res) => {
-    if (req.user.phone_verified) return res.json({ ok: true, already: true });
+    if (req.user.email_verified) return res.json({ ok: true, already: true });
     const sent = await sendOtp(req.user);
     res.json({
       ok: true, sent,
-      message: sent ? 'Code imetumwa kwa SMS.' : 'Huduma ya SMS bado haijawashwa. Wasiliana na 88EST kupata code yako.',
+      message: sent ? 'Code imetumwa kwenye email yako. Angalia pia folda ya Spam.' : 'Imeshindwa kutuma email kwa sasa. Wasiliana na 88EST kupata code yako.',
     });
   });
 
@@ -198,7 +235,7 @@ module.exports = function (app) {
     const code = String(req.body.code || '').trim();
     U.need(u.otp_code && code === u.otp_code, 'Code si sahihi');
     U.need(new Date(u.otp_expires) > new Date(), 'Code imeisha muda. Omba nyingine.');
-    const nu = await db.one('UPDATE users SET phone_verified = true, otp_code = NULL WHERE id = $1 RETURNING *', [u.id]);
+    const nu = await db.one('UPDATE users SET email_verified = true, otp_code = NULL WHERE id = $1 RETURNING *', [u.id]);
     res.json(await meResponse(nu));
   });
 
@@ -232,7 +269,7 @@ module.exports = function (app) {
     U.need(lim.used < lim.max, `Umefikia kikomo cha matangazo ${lim.max}. Jiunge na Pro au ondoa matangazo yaliyokwisha.`);
     const d = await listingFromBody(req.body, req.user);
     const cols = LISTING_COLS.concat(['user_id', 'status']);
-    const vals = LISTING_COLS.map((c) => d[c]).concat([req.user.id, req.user.role === 'admin' ? 'approved' : 'pending']);
+    const vals = LISTING_COLS.map((c) => d[c]).concat([req.user.id, U.isAdmin(req.user) ? 'approved' : 'pending']);
     const ph = cols.map((c, i) => '$' + (i + 1) + (c === 'amenities' || c === 'photos' ? '::jsonb' : ''));
     const l = await db.one(`INSERT INTO listings(${cols.join(', ')}) VALUES (${ph.join(', ')}) RETURNING *`, vals);
     res.json(myListingRow(l));
@@ -246,7 +283,7 @@ module.exports = function (app) {
     const sets = LISTING_COLS.map((c, i) => `${c} = $${i + 1}${c === 'amenities' || c === 'photos' ? '::jsonb' : ''}`);
     // Tangazo lililobadilishwa linakaguliwa upya (isipokuwa la admin au lililokwisha)
     let status = old.status;
-    if (req.user.role !== 'admin' && ['approved', 'rejected'].includes(old.status)) status = 'pending';
+    if (!U.isAdmin(req.user) && ['approved', 'rejected'].includes(old.status)) status = 'pending';
     const vals = LISTING_COLS.map((c) => d[c]).concat([status, id]);
     const l = await db.one(
       `UPDATE listings SET ${sets.join(', ')}, status = $${LISTING_COLS.length + 1}, reject_reason = NULL, updated_at = now() WHERE id = $${LISTING_COLS.length + 2} RETURNING *`,
@@ -265,7 +302,7 @@ module.exports = function (app) {
       U.need(l.status === 'taken', 'Tangazo hili halijawekwa kama limechukuliwa');
       const lim = await limits(req.user);
       U.need(lim.used < lim.max, `Umefikia kikomo cha matangazo ${lim.max}.`);
-      await db.q(`UPDATE listings SET status = $1, updated_at = now() WHERE id = $2`, [req.user.role === 'admin' ? 'approved' : 'pending', id]);
+      await db.q(`UPDATE listings SET status = $1, updated_at = now() WHERE id = $2`, [U.isAdmin(req.user) ? 'approved' : 'pending', id]);
     } else {
       throw httpError(400, 'Hali si sahihi');
     }

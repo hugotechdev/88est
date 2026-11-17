@@ -58,7 +58,14 @@ async function requireAuth(req, res) {
 async function requireAdmin(req, res) {
   await requireAuth(req, res);
   if (res.writableEnded) return;
-  if (req.user.role !== 'admin') return res.json({ error: 'Huna ruhusa ya kufungua hapa.' }, 403);
+  if (req.user.role !== 'admin' && req.user.role !== 'superadmin') return res.json({ error: 'Huna ruhusa ya kufungua hapa.' }, 403);
 }
 
-module.exports = { hashPassword, checkPassword, sign, verifyToken, loadUser, requireAuth, requireAdmin };
+// Super admin (mmiliki wa 88EST) peke yake
+async function requireSuper(req, res) {
+  await requireAuth(req, res);
+  if (res.writableEnded) return;
+  if (req.user.role !== 'superadmin') return res.json({ error: 'Sehemu hii ni ya super admin tu.' }, 403);
+}
+
+module.exports = { hashPassword, checkPassword, sign, verifyToken, loadUser, requireAuth, requireAdmin, requireSuper };

@@ -76,7 +76,7 @@
   E.verifyIcon = (s) => (s.verify_level >= 1 ? ' <i class="ti ti-rosette-discount-check gold" title="Verified"></i>' : '');
 
   // Nembo ya 88EST
-  E.logoIcon = (size = 36) => `<svg width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#1F2125"/><polyline points="15,25 32,12 49,25" fill="none" stroke="#C9A24A" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><text x="32" y="52" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="27" fill="#C9A24A">88</text></svg>`;
+  E.logoIcon = (size = 36) => `<svg width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#1F2125"/><polyline points="15,25 32,12 49,25" fill="none" stroke="#C9A24A" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><text x="32" y="52" text-anchor="middle" font-family="Plus Jakarta Sans, Arial, sans-serif" font-weight="700" font-size="27" fill="#C9A24A">88</text></svg>`;
   E.logo = (dark = false) => `<span class="logo notranslate" translate="no">${E.logoIcon(34)}<span class="logo-text${dark ? ' on-dark' : ''}">88<b>EST</b></span></span>`;
 
   // Maombi kwa server

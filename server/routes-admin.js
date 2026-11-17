@@ -1,9 +1,18 @@
 // Routes za admin (HUGO TECH): kupitisha matangazo, watumiaji, uthibitisho, Pro, ripoti, mipangilio
 const crypto = require('crypto');
 const db = require('./db');
-const { hashPassword, sign, requireAdmin } = require('./auth');
+const { hashPassword, sign, requireAdmin, requireSuper } = require('./auth');
 const { httpError } = require('./router');
 const U = require('./util');
+
+// Kumbukumbu ya kila kitendo cha admin (super admin anaiona)
+async function log(req, action, target, details) {
+  try {
+    await db.q('INSERT INTO admin_logs(admin_id, admin_name, action, target, details) VALUES ($1, $2, $3, $4, $5)', [
+      req.user.id, req.user.name, action, target ? String(target).slice(0, 200) : null, details ? String(details).slice(0, 500) : null,
+    ]);
+  } catch (e) { /* kumbukumbu isizuie kazi */ }
+}
 
 module.exports = function (app) {
   // ===== Muhtasari =====
@@ -82,6 +91,7 @@ module.exports = function (app) {
     } else {
       throw httpError(400, 'Kitendo si sahihi');
     }
+    await log(req, 'tangazo:' + a, 'Tangazo #' + id, req.body.reason || (req.body.days ? 'siku ' + req.body.days : ''));
     res.json({ ok: true });
   });
 
@@ -107,8 +117,8 @@ module.exports = function (app) {
         ...U.selfUser(u),
         listing_count: Number(u.listing_count),
         live_count: Number(u.live_count),
-        // Kama SMS haijawekwa, admin anaweza kumpa mtumiaji code hii kwa simu
-        otp_code: u.phone_verified ? null : u.otp_code,
+        // Kama email haikufika, admin anaweza kumpa mtumiaji code hii kwa simu
+        otp_code: u.email_verified ? null : u.otp_code,
       })),
     });
   });
@@ -131,11 +141,12 @@ module.exports = function (app) {
     const businessName = U.str(b.business_name, 100);
     const slug = await U.uniqueSlug(db, businessName || name);
     const u = await db.one(
-      `INSERT INTO users(role, account_type, name, business_name, slug, phone, phone_verified, email, password_hash, whatsapp, region, district, ward, service_areas)
-       VALUES ('seller', $1, $2, $3, $4, $5, true, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      `INSERT INTO users(role, account_type, name, business_name, slug, phone, phone_verified, email, email_verified, password_hash, whatsapp, region, district, ward, service_areas)
+       VALUES ('seller', $1, $2, $3, $4, $5, true, $6, true, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [b.account_type, name, businessName, slug, phone, email ? email.toLowerCase() : null, hashPassword(password),
         b.whatsapp ? U.normPhone(b.whatsapp) : null, U.str(b.region, 60), U.str(b.district, 60), U.str(b.ward, 80), U.str(b.service_areas, 300)]
     );
+    await log(req, 'muuzaji:sajili', u.name + ' (' + u.phone + ')');
     res.json({ user: U.selfUser(u), password });
   });
 
@@ -162,7 +173,7 @@ module.exports = function (app) {
     } else if (a === 'phone_verified') {
       await db.q('UPDATE users SET phone_verified = true, otp_code = NULL WHERE id = $1', [id]);
     } else if (a === 'email_verified') {
-      await db.q('UPDATE users SET email_verified = true WHERE id = $1', [id]);
+      await db.q('UPDATE users SET email_verified = true, otp_code = NULL WHERE id = $1', [id]);
     } else if (a === 'reset_password') {
       const pw = String(crypto.randomInt(10000000, 99999999));
       await db.q('UPDATE users SET password_hash = $1 WHERE id = $2', [hashPassword(pw), id]);
@@ -172,6 +183,7 @@ module.exports = function (app) {
     } else {
       throw httpError(400, 'Kitendo si sahihi');
     }
+    await log(req, 'muuzaji:' + a, u.name + ' (' + u.phone + ')', req.body.level != null ? 'ngazi ' + req.body.level : req.body.months != null ? 'miezi ' + req.body.months : '');
     res.json({ ok: true, ...extra });
   });
 
@@ -179,6 +191,7 @@ module.exports = function (app) {
   app.post('/api/admin/users/:id/impersonate', requireAdmin, async (req, res) => {
     const u = await db.one("SELECT id FROM users WHERE id = $1 AND role = 'seller'", [U.int(req.params.id, 1)]);
     if (!u) throw httpError(404, 'Mtumiaji hapatikani');
+    await log(req, 'muuzaji:ingia-kama', 'Muuzaji #' + u.id);
     res.json({ token: sign({ uid: u.id, by: req.user.id }, 1) });
   });
 
@@ -207,6 +220,7 @@ module.exports = function (app) {
     } else {
       throw httpError(400, 'Kitendo si sahihi');
     }
+    await log(req, 'uthibitisho:' + req.body.action, 'Muuzaji #' + v.user_id, req.body.note || (req.body.level ? 'ngazi ' + req.body.level : ''));
     res.json({ ok: true });
   });
 
@@ -232,6 +246,7 @@ module.exports = function (app) {
     } else {
       throw httpError(400, 'Kitendo si sahihi');
     }
+    await log(req, 'pro:' + req.body.action, 'Muuzaji #' + p.user_id, 'miezi ' + p.months + ', TZS ' + Number(p.amount).toLocaleString('en-US') + ', ref ' + p.reference);
     res.json({ ok: true });
   });
 
@@ -265,6 +280,7 @@ module.exports = function (app) {
     } else {
       throw httpError(400, 'Kitendo si sahihi');
     }
+    await log(req, 'ripoti:' + a, 'Tangazo #' + r.listing_id);
     res.json({ ok: true });
   });
 
@@ -279,24 +295,28 @@ module.exports = function (app) {
 
   app.delete('/api/admin/ratings/:id', requireAdmin, async (req, res) => {
     await db.q('DELETE FROM ratings WHERE id = $1', [U.int(req.params.id, 1)]);
+    await log(req, 'maoni:futa', 'Maoni #' + req.params.id);
     res.json({ ok: true });
   });
 
   // ===== Mipangilio =====
-  app.get('/api/admin/settings', requireAdmin, async (req, res) => {
+  app.get('/api/admin/settings', requireSuper, async (req, res) => {
     res.json(await db.getSettings());
   });
 
-  app.put('/api/admin/settings', requireAdmin, async (req, res) => {
+  app.put('/api/admin/settings', requireSuper, async (req, res) => {
     const keys = Object.keys(db.DEFAULT_SETTINGS);
     for (const k of keys) {
       if (req.body[k] === undefined) continue;
-      const v = U.str(req.body[k], 2000);
-      if (['free_limit', 'pro_limit', 'pro_price_month', 'featured_price_week'].includes(k)) {
+      const v = U.str(req.body[k], k === 'agent_faq' ? 6000 : 2000);
+      if (['free_limit', 'pro_limit', 'pro_price_month', 'featured_price_week', 'agent_daily_limit'].includes(k)) {
         U.need(v !== null && /^\d+$/.test(v), 'Thamani ya ' + k + ' iwe namba');
       }
       await db.q('INSERT INTO settings(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value', [k, v]);
     }
+    await log(req, 'mipangilio:badilisha', Object.keys(req.body).filter((k) => keys.includes(k)).join(', '));
     res.json(await db.getSettings());
   });
 };
+
+module.exports.log = log;
