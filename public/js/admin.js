@@ -25,17 +25,20 @@
       <div class="auth-card"><form id="lf">
         <div class="field"><label>Namba ya simu</label><input class="input" name="phone" inputmode="tel" required></div>
         <div class="field"><label>Password</label><input class="input" type="password" name="password" required></div>
+        <div id="capA"></div>
         <button class="btn btn-dark btn-block">Ingia</button></form></div></div>`;
+    let cap = null;
+    E.captcha($('#capA')).then((c) => { cap = c; });
     $('#lf').onsubmit = async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('button');
       E.busy(btn, true);
       try {
-        const r = await E.api('/api/auth/login', { body: E.formData(e.target), token: '' });
+        const r = await E.api('/api/auth/login', { body: { ...E.formData(e.target), captcha: E.capToken(cap) }, token: '' });
         if (r.user.role !== 'admin' && r.user.role !== 'superadmin') throw new Error('Akaunti hii si ya admin');
         localStorage.setItem('est_admin', r.token);
         route();
-      } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
+      } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); if (cap) cap.reset(); }
     };
   }
 
@@ -80,12 +83,12 @@
         ${s.pending ? `<a href="#/listings" style="text-decoration:underline">Matangazo ${s.pending}</a> · ` : ''}
         ${s.verifications ? `<a href="#/verify" style="text-decoration:underline">Uthibitisho ${s.verifications}</a> · ` : ''}
         ${s.pro_requests ? `<a href="#/pro" style="text-decoration:underline">Malipo ya Pro ${s.pro_requests}</a> · ` : ''}
-        ${s.reports ? `<a href="#/reports" style="text-decoration:underline">Ripoti ${s.reports}</a>` : ''}</div></div></div>` : '<div class="alert alert-dark"><i class="ti ti-circle-check gold"></i><div>Hakuna kazi inayosubiri. Safi!</div></div>'}
+        ${s.reports ? `<a href="#/reports" style="text-decoration:underline">Ripoti ${s.reports}</a>` : ''}</div></div></div>` : '<div class="alert alert-dark"><i class="ti ti-circle-check gold"></i><div>Hakuna kazi inayosubiri.</div></div>'}
       <h3 class="mt">Wauzaji</h3>
       <div class="stats">${box('ti-users', s.sellers, 'Wote', '/users')}${box('ti-user-star', s.agents, 'Madalali')}${box('ti-crane', s.developers, 'Developers')}${box('ti-home-heart', s.owners, 'Wenye mali')}${box('ti-crown', s.pro, 'Pro')}${box('ti-user-plus', s.new_week, 'Wapya wiki hii')}</div>
       <h3 class="mt">Matangazo</h3>
       <div class="stats">${box('ti-clock', s.pending, 'Yanasubiri', '/listings')}${box('ti-circle-check', s.approved, 'Hewani')}${box('ti-eye-off', s.hidden, 'Yamefichwa')}${box('ti-check', s.taken, 'Yamechukuliwa')}${box('ti-eye', s.views, 'Walioona')}${box('ti-phone-call', s.leads, 'Leads (simu+WA)')}</div>
-      <div class="card mt"><h3>Mweke muuzaji kwa niaba yake</h3><p class="small muted">Kwa madalali wasiojua teknolojia: fungua akaunti yao hapa, kisha "Ingia kama" kuwawekea matangazo.</p>
+      <div class="card mt"><h3>Sajili muuzaji kwa niaba yake</h3>
         <button class="btn btn-gold" id="newSeller"><i class="ti ti-user-plus"></i> Sajili muuzaji</button></div>`;
     $('#newSeller').onclick = newSellerModal;
   }
@@ -246,7 +249,7 @@
     if (!main) return;
     const r = await E.api('/api/admin/verifications');
     const t = E.token();
-    main.innerHTML = `<h1>Maombi ya uthibitisho</h1><p class="muted small">Linganisha picha ya kitambulisho na selfie. Hakikisha jina linalingana na akaunti. Kumbuka: beji ni sehemu ya Pro.</p>
+    main.innerHTML = `<h1>Maombi ya uthibitisho</h1><p class="muted small">Linganisha kitambulisho, selfie na jina la akaunti.</p>
       ${r.items.length ? r.items.map((v) => `<div class="a-item">
         <div class="hd"><div><b>${esc(v.business_name || v.name)}</b><div class="small muted">${esc(E.ACCT[v.account_type])} · ${esc(E.phoneLocal(v.phone))} · ${esc([v.district, v.region].filter(Boolean).join(', '))}</div>
           <div class="small">NIDA: <b>${esc(v.nida)}</b>${v.tin ? ' · TIN: <b>' + esc(v.tin) + '</b>' : ''}</div></div><span class="tiny muted">${E.timeAgo(v.created_at)}</span></div>
@@ -272,7 +275,7 @@
     const main = await shell('/pro');
     if (!main) return;
     const r = await E.api('/api/admin/pro-requests');
-    main.innerHTML = `<h1>Malipo ya Pro</h1><p class="muted small">Hakikisha muamala umeingia kwenye akaunti yako ya M-Pesa/Airtel/benki kabla ya kukubali.</p>
+    main.innerHTML = `<h1>Malipo ya Pro</h1><p class="muted small">Hakikisha muamala umeingia kabla ya kukubali.</p>
       ${r.items.length ? r.items.map((p) => `<div class="a-item"><div class="hd"><div><b>${esc(p.business_name || p.name)}</b><div class="small muted">${esc(E.phoneLocal(p.phone))}</div>
         <div>Miezi <b>${p.months}</b> · <b>${E.money(p.amount)}</b></div><div class="small">Reference: <b>${esc(p.reference)}</b></div></div><span class="tiny muted">${E.timeAgo(p.created_at)}</span></div>
         <div class="acts"><button class="btn btn-gold btn-sm" data-a="approve" data-id="${p.id}"><i class="ti ti-check"></i> Malipo yamepokelewa</button><button class="btn btn-danger btn-sm" data-a="reject" data-id="${p.id}">Kataa</button></div></div>`).join('') : '<div class="empty"><i class="ti ti-inbox"></i>Hakuna malipo yanayosubiri.</div>'}`;
@@ -289,7 +292,7 @@
     const main = await shell('/reports');
     if (!main) return;
     const r = await E.api('/api/admin/reports');
-    main.innerHTML = `<h1>Ripoti za matangazo</h1><p class="muted small">Tangazo lenye ripoti 3 linafichwa lenyewe mpaka uamue.</p>
+    main.innerHTML = `<h1>Ripoti za matangazo</h1><p class="muted small">Ripoti 3 zinaficha tangazo mpaka uamue.</p>
       ${r.items.length ? r.items.map((x) => `<div class="a-item"><div class="hd"><div><b>${esc(E.REPORTS[x.reason] || x.reason)}</b>
         <div class="small">Tangazo: <a href="/#/l/${x.listing_id}" target="_blank" style="text-decoration:underline">${esc(x.title)}</a> <span class="badge ${(E.STATUS[x.listing_status] || [])[1]}">${(E.STATUS[x.listing_status] || [x.listing_status])[0]}</span></div>
         <div class="small muted">Muuzaji: ${esc(x.seller_business || x.seller_name)} · ${esc(E.phoneLocal(x.seller_phone))}</div>
@@ -325,7 +328,7 @@
   async function mapPage() {
     const main = await shell('/map');
     if (!main) return;
-    main.innerHTML = `<h1>Wauzaji wako wapi</h1><p class="muted small">Alama za gold: ofisi zilizowekwa na wauzaji. Duara: idadi ya wauzaji kwa mkoa.</p><div class="map big-map" id="bigMap"></div><div id="regList" class="mt"></div>`;
+    main.innerHTML = `<h1>Wauzaji wako wapi</h1><p class="muted small">Alama: ofisi. Duara: wauzaji kwa mkoa.</p><div class="map big-map" id="bigMap"></div><div id="regList" class="mt"></div>`;
     const [L, r] = await Promise.all([E.loadLeaflet(), E.api('/api/admin/users?all=1')]);
     const counts = {};
     r.items.forEach((u) => { if (u.region) counts[u.region] = (counts[u.region] || 0) + 1; });
@@ -395,7 +398,7 @@
   async function superStaff(sb) {
     const r = await E.api('/api/super/staff');
     sb.innerHTML = `<div class="card"><div class="row between"><h3 style="margin:0">Timu ya admin</h3><button class="btn btn-gold btn-sm" id="addStaff"><i class="ti ti-user-plus"></i> Ongeza admin</button></div>
-      <p class="small muted">Admin wanaweza kupitisha matangazo, wauzaji, uthibitisho, malipo na ripoti. Hawawezi kuona sehemu hii ya super admin wala kubadilisha bei.</p></div>
+      <p class="small muted">Admin hawaoni sehemu hii wala bei.</p></div>
       ${r.items.map((u) => `<div class="a-item"><div class="hd"><div><b>${esc(u.name)}</b> ${u.role === 'superadmin' ? '<span class="badge badge-dark">SUPER ADMIN</span>' : '<span class="badge badge-light">Admin</span>'} ${u.status === 'suspended' ? '<span class="badge st-rejected">Amesimamishwa</span>' : ''}
         <div class="small muted">${esc(E.phoneLocal(u.phone))}${u.email ? ' · ' + esc(u.email) : ''}</div>
         <div class="tiny muted">Vitendo ${u.actions}${u.last_action ? ' · mwisho ' + E.timeAgo(u.last_action) : ''}</div></div></div>
@@ -438,7 +441,7 @@
   async function superAgentLogs(sb) {
     const r = await E.api('/api/super/agent-logs');
     const src = { local: ['Bure', 'st-approved'], faq: ['Jibu tayari', 'st-approved'], ai: ['AI', 'st-pending'], fallback: ['Hakuelewa', 'st-rejected'] };
-    sb.innerHTML = `<p class="small muted">Haya ndiyo wateja wanayouliza. "Hakuelewa" inaonyesha maswali unayoweza kuyaongeza kwenye "Majibu ya haraka" (sehemu ya Msaidizi wa AI).</p>
+    sb.innerHTML = `<p class="small muted">Maswali yenye "Hakuelewa" yaongeze kwenye Majibu ya haraka.</p>
       ${r.items.map((x) => `<div class="a-item"><div class="hd"><b class="small">${esc(x.question)}</b><span class="badge ${(src[x.source] || ['', ''])[1]}">${(src[x.source] || [x.source])[0]}</span></div>
         <div class="small muted mt-s">${esc(x.reply)}</div><div class="tiny muted">${E.timeAgo(x.created_at)}${x.results != null ? ' · matangazo ' + x.results : ''}</div></div>`).join('') || '<div class="empty">Bado hakuna maswali.</div>'}`;
   }
@@ -447,7 +450,7 @@
     const [s, o] = await Promise.all([E.api('/api/admin/settings'), E.api('/api/super/overview')]);
     sb.innerHTML = `<form id="aif" class="form-sec">
       <h3><i class="ti ti-sparkles gold"></i> Msaidizi wa wateja</h3>
-      <p class="small muted">Msaidizi anajibu kwa ufupi, anatambua mteja anataka nini na kumwonyesha matangazo. Maswali mengi yanajibiwa bila AI (bure). AI inatumika tu asipoelewa.</p>
+      <p class="small muted">Maswali mengi yanajibiwa bila AI. AI inatumika tu asipoelewa.</p>
       <div class="grid2">
         <div class="field"><label>Msaidizi</label><select class="input" name="agent_enabled"><option value="1" ${s.agent_enabled !== '0' ? 'selected' : ''}>Amewashwa</option><option value="0" ${s.agent_enabled === '0' ? 'selected' : ''}>Amezimwa</option></select></div>
         <div class="field"><label>Matumizi ya AI</label><select class="input" name="agent_ai_enabled"><option value="1" ${s.agent_ai_enabled !== '0' ? 'selected' : ''}>Ruhusu AI</option><option value="0" ${s.agent_ai_enabled === '0' ? 'selected' : ''}>Bila AI (bure kabisa)</option></select></div>
@@ -455,7 +458,7 @@
       <div class="field"><label>Kikomo cha maswali ya AI kwa mteja kwa siku</label><input class="input" name="agent_daily_limit" value="${esc(s.agent_daily_limit || '20')}" inputmode="numeric"></div>
       <div class="field"><label>Majibu ya haraka (bila AI)</label>
         <textarea class="input" name="agent_faq" style="min-height:160px" placeholder="maneno, muhimu: jibu&#10;mfano:&#10;mkopo, benki: Kwa sasa hatutoi mikopo, lakini developers wengine wana mpango wa malipo kwa awamu.&#10;ofisi yenu, mnapatikana wapi: Ofisi ya HUGO TECH iko ...">${esc(s.agent_faq || '')}</textarea>
-        <div class="hint">Kila mstari: maneno ya kutambua (yakitenganishwa kwa koma), kisha <b>:</b>, kisha jibu. Mteja akitumia neno lolote kati ya hayo, anapata jibu hilo bure.</div></div>
+        <div class="hint">Kila mstari: <b>maneno, ya, kutambua: jibu</b></div></div>
       <p class="small">AI: ${o.ai_key ? `<span class="badge st-approved">Imeunganishwa</span> ${esc(o.ai_model)}` : '<span class="badge st-pending">Haijaunganishwa</span> Weka <code>ANTHROPIC_API_KEY</code> kwenye Variables za Railway'}</p>
       <button class="btn btn-gold">Hifadhi</button></form>`;
     $('#aif').onsubmit = async (e) => {

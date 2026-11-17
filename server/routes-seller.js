@@ -96,6 +96,7 @@ module.exports = function (app) {
   app.post('/api/auth/register', async (req, res) => {
     U.rateLimit('reg:' + U.clientIp(req), 10, 3600e3);
     const b = req.body;
+    await U.verifyCaptcha(req);
     const name = U.str(b.name, 80);
     U.need(name && name.length >= 2, 'Andika jina lako kamili');
     U.need(U.ACCOUNT_TYPES.includes(b.account_type), 'Chagua aina ya akaunti (Dalali, Developer au Mwenye mali)');
@@ -129,6 +130,7 @@ module.exports = function (app) {
     const phone = U.normPhone(req.body.phone);
     U.need(phone, 'Weka namba ya simu sahihi');
     U.rateLimit('login:' + phone, 8, 15 * 60e3);
+    await U.verifyCaptcha(req);
     const u = await db.one('SELECT * FROM users WHERE phone = $1', [phone]);
     if (!u || !checkPassword(req.body.password || '', u.password_hash)) {
       throw httpError(400, 'Namba ya simu au password si sahihi');
@@ -143,6 +145,7 @@ module.exports = function (app) {
     U.need(phone, 'Weka namba ya simu uliyosajilia');
     U.rateLimit('forgot:' + phone, 4, 3600e3);
     U.rateLimit('forgotip:' + U.clientIp(req), 10, 3600e3);
+    await U.verifyCaptcha(req);
     const u = await db.one("SELECT * FROM users WHERE phone = $1 AND status = 'active'", [phone]);
     let masked = null;
     if (u && u.email) {

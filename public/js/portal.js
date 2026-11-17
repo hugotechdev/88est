@@ -79,37 +79,43 @@
           <div class="field"><label>Kata / Mtaa</label><input class="input" name="ward" placeholder="Mfano: Sinza"></div>
           <div class="field"><label>Maeneo unayofanyia kazi</label><input class="input" name="service_areas" placeholder="Mfano: Kinondoni, Ubungo, Kigamboni"></div>
           <div class="field"><label>Password *</label><input class="input" name="password" type="password" minlength="6" required autocomplete="new-password"><div class="hint">Angalau herufi 6</div></div>
-          <p class="tiny muted">Kwa kujisajili unakubali kuweka matangazo ya kweli tu. 88EST ni jukwaa la kuunganisha; wewe unawajibika kwa matangazo yako.</p>
+          <p class="tiny muted">Unakubali kuweka matangazo ya kweli tu, na unawajibika kwa matangazo yako.</p>
+          <div id="capR"></div>
           <button class="btn btn-gold btn-block">Fungua akaunti</button>
         </form>`;
       E.bindRegion(body, '#rReg', '#rDis');
+      let cap = null;
+      E.captcha($('#capR')).then((c) => { cap = c; });
       $('#rf').onsubmit = async (e) => {
         e.preventDefault();
         const btn = e.target.querySelector('button.btn');
         E.busy(btn, true);
         try {
-          const r = await E.api('/api/auth/register', { body: E.formData(e.target), token: '' });
+          const r = await E.api('/api/auth/register', { body: { ...E.formData(e.target), captcha: E.capToken(cap) }, token: '' });
           localStorage.setItem('est_token', r.token);
           setMe(r);
           E.toast('Karibu 88EST! Akaunti imefunguliwa.', 'ok');
           location.hash = sessionStorage.getItem('est_after') || '#/';
           sessionStorage.removeItem('est_after');
-        } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
+        } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); if (cap) cap.reset(); }
       };
     } else {
       body.innerHTML = `
         <form id="lf">
           <div class="field"><label>Namba ya simu</label><input class="input" name="phone" inputmode="tel" placeholder="0712 345 678" required autocomplete="tel"></div>
           <div class="field"><label>Password</label><input class="input" name="password" type="password" required autocomplete="current-password"></div>
+          <div id="capL"></div>
           <button class="btn btn-dark btn-block">Ingia</button>
           <p class="small center mt"><a href="#/forgot" style="color:var(--gold-d);font-weight:600">Umesahau password?</a></p>
         </form>`;
+      let cap = null;
+      E.captcha($('#capL')).then((c) => { cap = c; });
       $('#lf').onsubmit = async (e) => {
         e.preventDefault();
         const btn = e.target.querySelector('button');
         E.busy(btn, true);
         try {
-          const r = await E.api('/api/auth/login', { body: E.formData(e.target), token: '' });
+          const r = await E.api('/api/auth/login', { body: { ...E.formData(e.target), captcha: E.capToken(cap) }, token: '' });
           if (r.user.role === 'admin' || r.user.role === 'superadmin') {
             localStorage.setItem('est_admin', r.token);
             location.href = '/admin.html';
@@ -119,7 +125,7 @@
           setMe(r);
           location.hash = sessionStorage.getItem('est_after') || '#/';
           sessionStorage.removeItem('est_after');
-        } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
+        } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); if (cap) cap.reset(); }
       };
     }
   }
@@ -132,9 +138,10 @@
         <div style="width:100%;max-width:460px;display:flex;justify-content:space-between;align-items:center"><a href="/">${E.logo(true)}</a>${E.langButton('dark')}</div>
         <div class="auth-card">
           <h2>Badilisha password</h2>
-          <p class="small muted">Weka namba ya simu uliyosajilia. Tutatuma code kwenye email ya akaunti yako.</p>
+          <p class="small muted">Code itatumwa kwenye email ya akaunti.</p>
           <form id="ff">
             <div class="field"><label>Namba ya simu</label><input class="input" name="phone" inputmode="tel" placeholder="0712 345 678" required></div>
+            <div id="capF"></div>
             <button class="btn btn-dark btn-block">Tuma code</button>
           </form>
           <form id="rf2" class="hide mt">
@@ -147,17 +154,19 @@
         </div>
       </div>`;
     let phone = '';
+    let cap = null;
+    E.captcha($('#capF')).then((c) => { cap = c; });
     $('#ff').onsubmit = async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('button');
       E.busy(btn, true);
       try {
         phone = e.target.phone.value;
-        const r = await E.api('/api/auth/forgot', { body: { phone }, token: '' });
+        const r = await E.api('/api/auth/forgot', { body: { phone, captcha: E.capToken(cap) }, token: '' });
         $('#fMsg').textContent = r.message;
         e.target.classList.add('hide');
         $('#rf2').classList.remove('hide');
-      } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
+      } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); if (cap) cap.reset(); }
     };
     $('#rf2').onsubmit = async (e) => {
       e.preventDefault();
@@ -202,12 +211,11 @@
     const link = location.origin + '/a/' + u.slug;
     main.innerHTML = `
       <h1>Habari, ${esc(u.name.split(' ')[0])}</h1>
-      <p class="muted" style="margin-top:-4px">Hapa unasimamia matangazo yako yote.</p>
       <div id="alerts"></div>
       <div class="stats" id="stats">${'<div class="stat skel" style="height:74px"></div>'.repeat(6)}</div>
       <div class="card mt">
         <div class="row between"><h3 style="margin:0">Ukurasa wako wa umma</h3>${E.badges(u)}</div>
-        <p class="small muted">Shiriki link hii kwenye WhatsApp, Instagram na Facebook. Wateja wataona matangazo yako yote.</p>
+        <p class="small muted">Shiriki link hii kwenye WhatsApp na mitandao.</p>
         <div class="copy-box"><span>${esc(link)}</span><button class="btn btn-gold btn-sm" id="copyLink"><i class="ti ti-copy"></i> Nakili</button></div>
         <div class="row gap mt-s"><a class="btn btn-ghost btn-sm" href="/#/a/${esc(u.slug)}" target="_blank"><i class="ti ti-eye"></i> Angalia</a>
         <a class="btn btn-ghost btn-sm" href="https://wa.me/?text=${encodeURIComponent('Angalia mali zangu kwenye 88EST: ' + link)}" target="_blank"><i class="ti ti-brand-whatsapp"></i> Shiriki WhatsApp</a></div>
@@ -224,11 +232,11 @@
     const al = [];
     if (!u.email_verified) {
       al.push(`<div class="alert alert-gold"><i class="ti ti-mail-check"></i><div class="grow">
-        <b>Thibitisha email yako</b><div class="small">Tumetuma code ya tarakimu 6 kwenda <b>${esc(u.email || '')}</b>. Angalia pia folda ya Spam.</div>
+        <b>Thibitisha email yako</b><div class="small">Code imetumwa kwenda <b>${esc(u.email || '')}</b> (angalia pia Spam).</div>
         <form id="otpF" class="row gap mt-s"><input class="input" name="code" inputmode="numeric" maxlength="6" placeholder="Code" style="max-width:140px"><button class="btn btn-dark btn-sm">Thibitisha</button><button type="button" class="btn btn-ghost btn-sm" id="otpRe">Tuma tena</button></form></div></div>`);
     }
     if (u.verify_level === 0 && !S.verPending) {
-      al.push(`<div class="alert alert-dark"><i class="ti ti-rosette-discount-check gold"></i><div class="grow"><b>Pata beji ya Verified</b><div class="small" style="opacity:.85">Wateja wanaamini zaidi wauzaji waliothibitishwa, na matangazo yako yanaonekana juu.</div><a href="#/verify" class="btn btn-gold btn-sm mt-s">Anza sasa</a></div></div>`);
+      al.push(`<div class="alert alert-dark"><i class="ti ti-rosette-discount-check gold"></i><div class="grow"><b>Pata beji ya Verified</b><div class="small" style="opacity:.85">Wateja wanaamini zaidi, na matangazo yako yanakaa juu.</div><a href="#/verify" class="btn btn-gold btn-sm mt-s">Anza sasa</a></div></div>`);
     }
     $('#alerts').innerHTML = al.join('');
     const otpF = $('#otpF');
@@ -254,7 +262,7 @@
         ['ti-phone', s.calls, 'Simu'], ['ti-brand-whatsapp', s.whatsapp, 'WhatsApp'], ['ti-star', s.rating ? s.rating + ' (' + s.rating_count + ')' : '-', 'Maoni'],
       ];
       $('#stats').innerHTML = box.map(([i, n, t]) => `<div class="stat"><i class="ti ${i}"></i><b>${esc(n)}</b><span>${t}</span></div>`).join('');
-      if (s.rejected) $('#alerts').insertAdjacentHTML('beforeend', `<div class="alert alert-red"><i class="ti ti-alert-triangle"></i><div><b>Matangazo ${s.rejected} yamekataliwa</b><div class="small">Angalia sababu kisha uyarekebishe. <a href="#/listings" style="text-decoration:underline">Fungua</a></div></div></div>`);
+      if (s.rejected) $('#alerts').insertAdjacentHTML('beforeend', `<div class="alert alert-red"><i class="ti ti-alert-triangle"></i><div><b>Matangazo ${s.rejected} yamekataliwa</b><div class="small"><a href="#/listings" style="text-decoration:underline">Ona sababu</a></div></div></div>`);
     } catch (e) { $('#stats').innerHTML = ''; }
   }
 
@@ -269,7 +277,7 @@
     let items;
     try { items = (await E.api('/api/my/listings')).items; } catch (e) { $('#lst').innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
     if (!items.length) {
-      $('#lst').innerHTML = '<div class="empty"><i class="ti ti-home-plus"></i>Bado hujaweka tangazo.<br><a class="btn btn-gold mt" href="#/new">Weka tangazo la kwanza</a></div>';
+      $('#lst').innerHTML = '<div class="empty"><i class="ti ti-home-plus"></i>Huna tangazo bado.<br><a class="btn btn-gold mt" href="#/new">Weka tangazo</a></div>';
       return;
     }
     $('#lst').innerHTML = items.map((l) => {
@@ -282,7 +290,7 @@
           <div class="mini"><span class="badge ${st[1]}">${st[0]}</span>${l.featured ? '<span class="badge badge-gold"><i class="ti ti-star"></i> Maalum</span>' : ''}
             <span><i class="ti ti-eye"></i> ${l.views}</span><span><i class="ti ti-phone"></i> ${l.leads_call}</span><span><i class="ti ti-brand-whatsapp"></i> ${l.leads_wa}</span></div>
           ${l.status === 'rejected' && l.reject_reason ? `<div class="small" style="color:var(--red)"><b>Sababu:</b> ${esc(l.reject_reason)}</div>` : ''}
-          ${l.status === 'hidden' ? '<div class="small muted">Limefichwa na admin kwa uchunguzi. Wasiliana na 88EST.</div>' : ''}
+          ${l.status === 'hidden' ? '<div class="small muted">Limefichwa kwa uchunguzi. Wasiliana na 88EST.</div>' : ''}
           <div class="acts">
             <a class="btn btn-ghost btn-sm" href="#/edit/${l.id}"><i class="ti ti-edit"></i> Hariri</a>
             <a class="btn btn-ghost btn-sm" href="/#/l/${l.id}" target="_blank"><i class="ti ti-eye"></i> Ona</a>
@@ -322,7 +330,7 @@
       main.innerHTML = '<div class="empty"><span class="spin"></span></div>';
       try { l = await E.api('/api/my/listings/' + id); } catch (e) { main.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
     } else if (S.limits.used >= S.limits.max) {
-      main.innerHTML = `<div class="empty"><i class="ti ti-lock"></i><b>Umefikia kikomo cha matangazo ${S.limits.max}</b><br>Jiunge na Pro upate nafasi ya matangazo zaidi, au weka matangazo yaliyokwisha kama "Imechukuliwa".<br><a class="btn btn-gold mt" href="#/pro">Jiunge na Pro</a></div>`;
+      main.innerHTML = `<div class="empty"><i class="ti ti-lock"></i><b>Umefikia kikomo cha matangazo ${S.limits.max}</b><br>Jiunge na Pro, au weka yaliyokwisha kama "Imechukuliwa".<br><a class="btn btn-gold mt" href="#/pro">Jiunge na Pro</a></div>`;
       return;
     }
     let photos = (l.photos || []).slice();
@@ -331,7 +339,7 @@
 
     main.innerHTML = `
       <h1>${id ? 'Hariri tangazo' : 'Weka tangazo jipya'}</h1>
-      ${id && l.status === 'approved' ? '<div class="alert alert-gold"><i class="ti ti-info-circle"></i><div class="small">Ukihifadhi mabadiliko, tangazo litakaguliwa tena kabla ya kurudi hewani.</div></div>' : ''}
+      ${id && l.status === 'approved' ? '<div class="alert alert-gold"><i class="ti ti-info-circle"></i><div class="small">Mabadiliko yatakaguliwa kabla ya kurudi hewani.</div></div>' : ''}
       <form id="lf" novalidate>
         <div class="form-sec"><h3><span class="n">1</span> Aina ya mali</h3>
           <div class="cat-pick">${E.CATS.map((c) => `<label><input type="radio" name="category" value="${c.k}" ${l.category === c.k ? 'checked' : ''}><i class="ti ${c.icon}"></i>${c.label}</label>`).join('')}</div>
@@ -340,7 +348,7 @@
         </div>
 
         <div class="form-sec"><h3><span class="n">2</span> Picha</h3>
-          <p class="small muted" style="margin-top:-6px">Weka picha halisi za mali hii (mpaka 12). Picha ya kwanza ndiyo itaonekana kwanza.</p>
+          <p class="small muted" style="margin-top:-6px">Picha halisi, mpaka 12. Ya kwanza ndiyo jalada.</p>
           <div class="photos" id="photos"></div>
           <input type="file" id="fileIn" accept="image/*" multiple hidden>
         </div>
@@ -359,7 +367,7 @@
             <div class="field"><label>Ada ya udalali</label><input class="input" name="agent_fee" value="${esc(l.agent_fee || '')}" placeholder="Mf. kodi ya mwezi 1 / Hakuna"></div>
             <div class="field"><label>Ada ya kuona mali</label><input class="input" name="viewing_fee" value="${esc(l.viewing_fee || '')}" placeholder="Mf. TZS 10,000 / Hakuna"></div>
           </div>
-          <div class="field"><label>Maelezo</label><textarea class="input" name="description" maxlength="4000" placeholder="Eleza mali: hali yake, mazingira, umbali kutoka barabarani, masharti ya mpangaji, n.k.">${esc(l.description || '')}</textarea></div>
+          <div class="field"><label>Maelezo</label><textarea class="input" name="description" maxlength="4000" placeholder="Hali ya mali, mazingira, masharti">${esc(l.description || '')}</textarea></div>
         </div>
 
         <div class="form-sec"><h3><span class="n">4</span> Mahali</h3>
@@ -370,7 +378,7 @@
           <div class="field"><label>Kata / Mtaa</label><input class="input" name="ward" value="${esc(l.ward || '')}" placeholder="Mfano: Mbezi Beach"></div>
           <div class="field"><label>Alama kwenye ramani (si lazima)</label>
             <div class="map" id="pinMap"></div>
-            <div class="hint">Gusa ramani kuweka alama. Wateja wataona eneo kwa kukadiria tu (si mahali halisi).</div>
+            <div class="hint">Gusa ramani. Wateja wanaona eneo la kukadiria tu.</div>
             <button type="button" class="btn btn-ghost btn-sm mt-s" id="myLoc"><i class="ti ti-current-location"></i> Tumia mahali nilipo sasa</button>
             <button type="button" class="btn btn-ghost btn-sm mt-s" id="clrPin"><i class="ti ti-x"></i> Ondoa alama</button>
           </div>
@@ -402,7 +410,7 @@
         </div>
 
         <div class="sticky-save"><button class="btn btn-gold btn-block" id="saveBtn"><i class="ti ti-send"></i> ${id ? 'Hifadhi mabadiliko' : 'Tuma kwa ukaguzi'}</button>
-          <p class="tiny muted center" style="margin:6px 0 0">Tangazo litaonekana hewani baada ya kukaguliwa na timu ya 88EST.</p></div>
+          <p class="tiny muted center" style="margin:6px 0 0">Litaonekana baada ya kukaguliwa.</p></div>
       </form>`;
 
     const form = $('#lf');
@@ -517,7 +525,7 @@
       <form id="pf">
         <div class="form-sec">
           <div class="row gap mb"><div class="avatar" id="av" style="width:72px;height:72px;font-size:26px">${avatar ? `<img src="${E.img(avatar)}">` : esc(u.name[0])}</div>
-            <div><button type="button" class="btn btn-ghost btn-sm" id="avBtn"><i class="ti ti-camera"></i> Badilisha picha/logo</button><div class="hint">Picha yako au logo ya kampuni</div></div>
+            <div><button type="button" class="btn btn-ghost btn-sm" id="avBtn"><i class="ti ti-camera"></i> Badilisha picha/logo</button></div>
             <input type="file" id="avIn" accept="image/*" hidden></div>
           <div class="field"><label>Aina ya akaunti</label>
             <div class="type-pick">${Object.entries(E.ACCT).map(([k, t]) => `<label><input type="radio" name="account_type" value="${k}" ${u.account_type === k ? 'checked' : ''}><i class="ti ${{ agent: 'ti-user-star', developer: 'ti-crane', owner: 'ti-home-heart' }[k]}"></i>${t}</label>`).join('')}</div></div>
@@ -526,7 +534,7 @@
           <div class="field"><label>Namba ya simu</label><input class="input" value="${esc(E.phoneLocal(u.phone))}" disabled><div class="hint">Kubadilisha namba wasiliana na 88EST</div></div>
           <div class="field"><label>Email</label><input class="input" name="email" type="email" value="${esc(u.email || '')}"><div class="hint">${u.email_verified ? '<i class="ti ti-check gold"></i> Imethibitishwa' : 'Bado haijathibitishwa. Ukibadilisha email, utatumiwa code mpya.'}</div></div>
           <div class="field"><label>Namba ya WhatsApp</label><input class="input" name="whatsapp" inputmode="tel" value="${esc(E.phoneLocal(u.whatsapp === u.phone ? '' : u.whatsapp))}" placeholder="Kama ni tofauti na ya simu"></div>
-          <div class="field"><label>Kuhusu wewe / biashara yako</label><textarea class="input" name="bio" maxlength="1000" placeholder="Mfano: Tunapangisha na kuuza nyumba Kinondoni tangu 2015...">${esc(u.bio || '')}</textarea></div>
+          <div class="field"><label>Kuhusu wewe / biashara yako</label><textarea class="input" name="bio" maxlength="1000" placeholder="Mf. Tunapangisha na kuuza nyumba Kinondoni tangu 2015">${esc(u.bio || '')}</textarea></div>
         </div>
         <div class="form-sec"><h3><i class="ti ti-map-pin gold"></i> Mahali unapopatikana</h3>
           <div class="grid2">
@@ -536,7 +544,7 @@
           <div class="field"><label>Kata / Mtaa</label><input class="input" name="ward" value="${esc(u.ward || '')}"></div>
           <div class="field"><label>Maeneo unayofanyia kazi</label><input class="input" name="service_areas" value="${esc(u.service_areas || '')}" placeholder="Mfano: Kinondoni, Ubungo"></div>
           <div class="field"><label>Ofisi kwenye ramani (si lazima)</label><div class="map" id="ofMap"></div>
-            <div class="hint"><i class="ti ti-lock"></i> Alama hii inaonekana kwa admin wa 88EST tu, si kwa umma.</div></div>
+            <div class="hint"><i class="ti ti-lock"></i> Inaonekana kwa admin tu.</div></div>
         </div>
         <button class="btn btn-gold btn-block" id="pSave">Hifadhi wasifu</button>
       </form>
@@ -590,7 +598,6 @@
     const level = (n, icon, t, d) => `<div class="level ${lvl >= n ? 'done' : ''}"><div class="ic"><i class="ti ${icon}"></i></div><div><b>${t}</b><div class="small muted">${d}</div></div></div>`;
     main.innerHTML = `
       <h1>Pata beji ya Verified</h1>
-      <p class="muted">Beji inaonyesha wateja kuwa umethibitishwa na 88EST. Matangazo ya waliothibitishwa yanaonekana juu zaidi.</p>
       <div class="card">
         ${level(0, 'ti-user', 'Akaunti ya kawaida', 'Umejisajili kwa simu na email')}
         ${level(1, 'ti-rosette-discount-check', 'Verified', 'Kitambulisho (NIDA) na selfie vimethibitishwa')}
@@ -599,25 +606,25 @@
       <div id="vBody" class="mt"></div>`;
     const vb = $('#vBody');
     if (latest && latest.status === 'pending') {
-      vb.innerHTML = '<div class="alert alert-gold"><i class="ti ti-clock"></i><div><b>Ombi lako linashughulikiwa</b><div class="small">Timu ya 88EST itakagua taarifa zako na kukujulisha.</div></div></div>';
+      vb.innerHTML = '<div class="alert alert-gold"><i class="ti ti-clock"></i><div><b>Ombi lako linakaguliwa</b></div></div>';
       return;
     }
     if (lvl >= 2) {
-      vb.innerHTML = '<div class="alert alert-dark"><i class="ti ti-rosette-discount-check gold"></i><div><b>Umefikia ngazi ya juu kabisa</b><div class="small" style="opacity:.85">Asante kwa kuwa muuzaji aliyethibitishwa.</div></div></div>';
+      vb.innerHTML = '<div class="alert alert-dark"><i class="ti ti-rosette-discount-check gold"></i><div><b>Umefikia ngazi ya juu kabisa</b></div></div>';
       return;
     }
     const imgs = { id_image: null, selfie_image: null, license_image: null };
     vb.innerHTML = `
       ${latest && latest.status === 'rejected' ? `<div class="alert alert-red"><i class="ti ti-alert-triangle"></i><div><b>Ombi la awali lilikataliwa</b><div class="small">${esc(latest.note || '')}</div></div></div>` : ''}
-      ${!v.pro ? `<div class="alert alert-gold"><i class="ti ti-crown"></i><div class="small">Beji ya Verified ni sehemu ya <b>kifurushi cha Pro</b>. Unaweza kutuma taarifa sasa; beji itawashwa ukishalipia Pro na kupita ukaguzi. <a href="#/pro" style="text-decoration:underline">Angalia Pro</a></div></div>` : ''}
+      ${!v.pro ? `<div class="alert alert-gold"><i class="ti ti-crown"></i><div class="small">Beji ni sehemu ya <a href="#/pro" style="text-decoration:underline">Pro</a>. Itawashwa ukishalipia na kupita ukaguzi.</div></div>` : ''}
       <form id="vf" class="form-sec">
         <h3>Tuma taarifa za uthibitisho</h3>
         <div class="field"><label>Namba ya NIDA *</label><input class="input" name="nida" inputmode="numeric" placeholder="Tarakimu 20" required></div>
         <div class="field"><label>Picha ya kitambulisho (NIDA) *</label><div class="upl" data-k="id_image"><i class="ti ti-id"></i><span class="small">Gusa kupiga au kuchagua picha</span></div></div>
         <div class="field"><label>Selfie yako ukiwa umeshika kitambulisho *</label><div class="upl" data-k="selfie_image"><i class="ti ti-camera-selfie"></i><span class="small">Gusa kupiga selfie</span></div></div>
-        <div class="field"><label>Leseni ya biashara (kwa kampuni)</label><div class="upl" data-k="license_image"><i class="ti ti-file-certificate"></i><span class="small">Si lazima. Inakupa ngazi ya "Kampuni iliyosajiliwa"</span></div></div>
+        <div class="field"><label>Leseni ya biashara (kwa kampuni)</label><div class="upl" data-k="license_image"><i class="ti ti-file-certificate"></i><span class="small">Si lazima</span></div></div>
         <div class="field"><label>Namba ya TIN</label><input class="input" name="tin" placeholder="Si lazima"></div>
-        <p class="tiny muted"><i class="ti ti-lock"></i> Taarifa hizi zinahifadhiwa kwa usalama na kuonwa na admin wa 88EST tu, kwa mujibu wa Sheria ya Ulinzi wa Taarifa Binafsi.</p>
+        <p class="tiny muted"><i class="ti ti-lock"></i> Zinaonwa na admin wa 88EST tu.</p>
         <button class="btn btn-gold btn-block" id="vSend">Tuma kwa ukaguzi</button>
         <input type="file" id="vIn" accept="image/*" hidden>
       </form>`;
@@ -661,24 +668,21 @@
     const price = cfg.pro_price_month;
     main.innerHTML = `
       <h1>88EST Pro</h1>
-      <p class="muted">Kuonekana zaidi, wateja zaidi.</p>
-      ${u.pro ? `<div class="alert alert-dark"><i class="ti ti-crown gold"></i><div><b>Uko kwenye Pro</b><div class="small" style="opacity:.85">Mpaka ${E.date(u.pro_until)}. Unaweza kuongeza muda wakati wowote.</div></div></div>` : ''}
+      ${u.pro ? `<div class="alert alert-dark"><i class="ti ti-crown gold"></i><div><b>Uko kwenye Pro</b><div class="small" style="opacity:.85">Mpaka ${E.date(u.pro_until)}.</div></div></div>` : ''}
       <div class="plan-card">
         <div class="row between"><h2 style="margin:0">Pro</h2><div><b style="font-size:20px">${E.money(price)}</b><span class="muted small"> / mwezi</span></div></div>
         <ul>
-          <li><i class="ti ti-rosette-discount-check"></i> Beji ya Verified (baada ya ukaguzi wa kitambulisho)</li>
-          <li><i class="ti ti-trending-up"></i> Matangazo yako yanaonekana juu kwenye matokeo</li>
-          <li><i class="ti ti-stack-2"></i> Matangazo mpaka ${cfg.pro_limit} (bure ni ${cfg.free_limit})</li>
-          <li><i class="ti ti-chart-bar"></i> Takwimu za walioona na waliopiga simu</li>
-          <li><i class="ti ti-crown"></i> Alama ya PRO kwenye ukurasa wako</li>
+          <li><i class="ti ti-rosette-discount-check"></i> Beji ya Verified (baada ya ukaguzi)</li>
+          <li><i class="ti ti-trending-up"></i> Matangazo yako juu kwenye matokeo</li>
+          <li><i class="ti ti-stack-2"></i> Matangazo ${cfg.pro_limit} (bure ni ${cfg.free_limit})</li>
         </ul>
-        <p class="small muted" style="margin:0">Tangazo maalum (juu kabisa ya ukurasa wa mwanzo): ${E.money(cfg.featured_price_week)} kwa wiki. Wasiliana nasi.</p>
+        <p class="small muted" style="margin:0">Tangazo maalum: ${E.money(cfg.featured_price_week)} kwa wiki.</p>
       </div>
       <div class="form-sec mt" id="payBox"></div>
       ${reqs.items.length ? `<div class="form-sec"><h3>Maombi yako</h3>${reqs.items.map((r) => `<div class="kv" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px"><span>Miezi ${r.months} · ${E.money(r.amount)}<br><span class="tiny muted">${E.date(r.created_at)} · Ref: ${esc(r.reference)}</span></span><span class="badge ${{ pending: 'st-pending', approved: 'st-approved', rejected: 'st-rejected' }[r.status]}">${{ pending: 'Inasubiri', approved: 'Imekubaliwa', rejected: 'Imekataliwa' }[r.status]}</span></div>`).join('')}</div>` : ''}`;
     const pay = $('#payBox');
     if (pending) {
-      pay.innerHTML = '<div class="alert alert-gold" style="margin:0"><i class="ti ti-clock"></i><div><b>Malipo yako yanathibitishwa</b><div class="small">Pro itawashwa mara timu ya 88EST ikithibitisha malipo.</div></div></div>';
+      pay.innerHTML = '<div class="alert alert-gold" style="margin:0"><i class="ti ti-clock"></i><div><b>Malipo yako yanathibitishwa</b></div></div>';
       return;
     }
     pay.innerHTML = `

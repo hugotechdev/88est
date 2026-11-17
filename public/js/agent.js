@@ -9,7 +9,7 @@
 
   const WELCOME = {
     role: 'bot',
-    text: 'Habari! Mimi ni msaidizi wa 88EST. Niambie unatafuta nini, nitakuonyesha mali zinazofaa.',
+    text: 'Habari! Unatafuta nini, wapi, na bajeti gani?',
     chips: ['Nyumba ya kupanga Dar chini ya 500k', 'Kiwanja Kigamboni', 'Short stay Arusha', 'Nawezaje kuweka tangazo?'],
   };
 
@@ -23,14 +23,14 @@
   panel.className = 'chat-panel glass';
   panel.innerHTML = `
     <div class="chat-head">
-      <div class="chat-av"><i class="ti ti-sparkles"></i></div>
-      <div class="grow"><b>Msaidizi wa 88EST</b><div class="tiny muted">Anakusaidia kupata mali haraka</div></div>
+      <div class="chat-av"><i class="ti ti-message-chatbot"></i></div>
+      <div class="grow"><b>Msaidizi wa 88EST</b></div>
       <button class="chat-x" data-chat-reset aria-label="Anza upya" title="Anza upya"><i class="ti ti-refresh"></i></button>
       <button class="chat-x" data-chat-close aria-label="Funga"><i class="ti ti-x"></i></button>
     </div>
     <div class="chat-body" id="chatBody"></div>
     <form class="chat-in" id="chatForm">
-      <input id="chatText" autocomplete="off" maxlength="500" placeholder="Mf. Nyumba vyumba 3 Mbezi, bajeti 800k">
+      <input id="chatText" autocomplete="off" maxlength="500" placeholder="Mf. nyumba vyumba 3 Mbezi 800k">
       <button class="go sm" aria-label="Tuma"><i class="ti ti-send"></i></button>
     </form>`;
   document.body.appendChild(panel);

@@ -1,5 +1,5 @@
 // Service worker: inafanya app ifunguke haraka na iwekwe kwenye simu
-const VERSION = '88est-v5';
+const VERSION = '88est-v7';
 const SHELL = ['/', '/index.html', '/css/style.css', '/css/app.css', '/js/common.js', '/js/locations.js', '/js/app.js', '/js/agent.js', '/icon.svg', '/img-placeholder.svg', '/bg/bg-mobile.jpg'];
 
 self.addEventListener('install', (e) => {

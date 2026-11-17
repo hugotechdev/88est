@@ -16,9 +16,7 @@
     { k: 'mradi', label: 'Miradi', icon: 'ti-crane' },
   ];
   E.cat = (k) => E.CATS.find((c) => c.k === k) || { k, label: k, icon: 'ti-home' };
-  E.RESIDENTIAL = ['nyumba', 'apartment', 'chumba', 'short_stay', 'mradi'];
   E.LAND = ['kiwanja', 'shamba'];
-  E.COMMERCIAL = ['frame', 'ofisi', 'ghala', 'ukumbi'];
 
   E.DEALS = { rent: 'Kupanga', sale: 'Kuuza', short: 'Short stay' };
   E.PERIODS = { month: 'mwezi', year: 'mwaka', night: 'usiku', day: 'siku', total: '' };
@@ -210,6 +208,46 @@
   });
   E.tiles = (L, map) => L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
   E.goldPin = (L) => L.divIcon({ className: '', html: '<div class="pin"></div>', iconSize: [26, 26], iconAnchor: [13, 26] });
+
+  // ===== Cloudflare Turnstile (uthibitisho wa usalama kwenye fomu) =====
+  E.config = () => E._cfgP || (E._cfgP = E.api('/api/config', { token: '' }).catch(() => { E._cfgP = null; return {}; }));
+  const loadTurnstile = () => new Promise((resolve) => {
+    if (window.turnstile) return resolve(window.turnstile);
+    let s = document.getElementById('cf-ts');
+    if (!s) {
+      s = document.createElement('script');
+      s.id = 'cf-ts';
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true;
+      document.head.appendChild(s);
+    }
+    const t0 = Date.now();
+    const wait = () => (window.turnstile ? resolve(window.turnstile) : Date.now() - t0 > 15000 ? resolve(null) : setTimeout(wait, 150));
+    wait();
+  });
+  // Inaweka kisanduku kwenye el; inarudisha { on, token(), reset() }
+  E.captcha = async (el) => {
+    const off = { on: false, token: () => '', reset() {} };
+    if (!el) return off;
+    const cfg = await E.config();
+    if (!cfg.turnstile_site_key) return off;
+    const ts = await loadTurnstile();
+    if (!ts || !el.isConnected) return off;
+    let tok = '';
+    el.classList.add('cap');
+    const id = ts.render(el, {
+      sitekey: cfg.turnstile_site_key, size: 'flexible', theme: 'light',
+      callback: (t) => { tok = t; }, 'expired-callback': () => { tok = ''; }, 'error-callback': () => { tok = ''; },
+    });
+    return { on: true, token: () => tok, reset: () => { tok = ''; try { ts.reset(id); } catch (e) { /* hakuna */ } } };
+  };
+  // Inahakikisha token ipo kabla ya kutuma fomu
+  E.capToken = (cap) => {
+    if (!cap || !cap.on) return '';
+    const t = cap.token();
+    if (!t) throw new Error('Subiri uthibitisho wa usalama ukamilike.');
+    return t;
+  };
 
   // ===== Lugha (Google Translate) =====
   E.LANGS = [

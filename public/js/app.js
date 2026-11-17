@@ -130,7 +130,7 @@
         const d = Math.max(-1, Math.min(1, (cMid - mid) / c.offsetWidth));
         if (Math.abs(d) < bestD) { bestD = Math.abs(d); best = i; }
         if (wide) { c.style.transform = ''; c.style.opacity = ''; return; }
-        c.style.transform = `scale(${1 - Math.abs(d) * 0.1}) rotateY(${d * -14}deg)`;
+        c.style.transform = `scale(${1 - Math.abs(d) * 0.08}) rotateY(${d * -8}deg)`;
         c.style.opacity = String(1 - Math.abs(d) * 0.35);
       });
       if (best !== active) {
@@ -169,7 +169,7 @@
       ${header()}
       <div class="search-pill glass" id="openSearch">
         <i class="ti ti-search"></i>
-        <div><div class="t1">Unatafuta wapi?</div><div class="t2">Mkoa · Wilaya · Bei · Aina ya mali</div></div>
+        <div><div class="t1">Unatafuta wapi?</div><div class="t2">Eneo, bei au aina ya mali</div></div>
         <span class="go"><i class="ti ti-arrow-right"></i></span>
       </div>
       <div class="cats" id="cats">
@@ -181,13 +181,13 @@
       </div>
       <div id="heroBox" style="margin-top:8px">${skelHero()}</div>
       <div class="dots" id="dots"></div>
-      <div class="sec-h"><h2>Karibu nawe <i class="ti ti-sparkles"></i></h2><a href="#" class="see-all glass" id="chRegion"><i class="ti ti-map-pin"></i> ${esc(S.region)}</a></div>
+      <div class="sec-h"><h2>Karibu nawe</h2><a href="#" class="see-all glass" id="chRegion"><i class="ti ti-map-pin"></i> ${esc(S.region)}</a></div>
       <div id="nearBox"><div class="hscroll">${'<div class="mcard skel"></div>'.repeat(3)}</div></div>
       <div class="sec-h"><h2>Matangazo mapya</h2><a href="#/s?${qs({ category: S.category, deal: S.deal, sort: 'new' })}" class="see-all glass">Yote <i class="ti ti-arrow-right"></i></a></div>
       <div id="gridBox">${skelGrid()}</div>
       <div class="center" style="padding:8px 18px"><button class="btn btn-ghost glass hide" id="more">Pakia zaidi</button></div>
       ${installBar()}
-      <div class="footer-note">88EST · Real estate marketplace<br>Huduma ya HUGO TECH</div>`;
+      <div class="footer-note">88EST · HUGO TECH</div>`;
 
     $('#openSearch').onclick = () => searchPanel({});
     $('#cats').onclick = (e) => { const b = e.target.closest('[data-cat]'); if (b) { S.category = b.dataset.cat; home(); } };
@@ -204,7 +204,7 @@
       ]);
       $('#heroBox').innerHTML = hero.items.length
         ? `<div class="hero" id="hero">${hero.items.map(heroCard).join('')}</div>`
-        : `<div class="empty"><i class="ti ti-home-search"></i>Bado hakuna matangazo kwenye kundi hili.<br><a class="btn btn-gold mt" href="/portal.html">Kuwa wa kwanza kuweka tangazo</a></div>`;
+        : `<div class="empty"><i class="ti ti-home-search"></i>Hakuna matangazo hapa bado.<br><a class="btn btn-gold mt" href="/portal.html">Weka tangazo</a></div>`;
       bindHero($('#hero'));
       $('#nearBox').innerHTML = near.items.length
         ? `<div class="hscroll">${near.items.map(miniCard).join('')}</div>`
@@ -228,7 +228,7 @@
   }
 
   function regionModal() {
-    const m = E.modal(`<h2>Chagua mkoa wako</h2><p class="muted small">Tutakuonyesha mali zilizo karibu nawe.</p>
+    const m = E.modal(`<h2>Mkoa wako</h2>
       <select class="input" id="rgSel">${E.regionOptions(S.region)}</select>
       <button class="btn btn-gold btn-block mt" id="rgOk">Hifadhi</button>`);
     m.querySelector('#rgOk').onclick = () => {
@@ -274,7 +274,7 @@
           <div class="seg" style="background:rgba(255,255,255,.7)">${['', '1', '2', '3', '4'].map((k) => `<label><input type="radio" name="beds" value="${k}" ${(cur.beds || '') === k ? 'checked' : ''}><span>${k ? k + '+' : 'Yoyote'}</span></label>`).join('')}</div>
         </div>
         <div class="row gap mt"><button type="button" class="btn btn-ghost" id="sClear" style="border-radius:26px">Futa</button>
-          <button class="btn grow" style="border-radius:26px;background:linear-gradient(145deg,#DDB862,#B88C33);color:#fff;height:50px"><i class="ti ti-search"></i> Tafuta</button></div>
+          <button class="btn btn-gold grow" style="border-radius:26px;height:50px"><i class="ti ti-search"></i> Tafuta</button></div>
       </form></div>`;
     document.body.appendChild(w);
     requestAnimationFrame(() => w.classList.add('open'));
@@ -326,7 +326,7 @@
       if (r.items[0]) setBg(E.img(r.items[0].photo));
       $('#res').innerHTML = r.items.length
         ? `<div class="grid" id="grid">${r.items.map(listCard).join('')}</div>`
-        : `<div class="empty"><i class="ti ti-mood-empty"></i>Hakuna mali inayolingana na utafutaji wako.<br>Jaribu kubadilisha bei au eneo.</div>`;
+        : `<div class="empty"><i class="ti ti-mood-empty"></i>Hakuna kinacholingana. Badilisha bei au eneo.</div>`;
       const more = $('#more');
       more.classList.toggle('hide', page * 24 >= r.total);
       more.onclick = async () => {
@@ -421,11 +421,10 @@
         ${l.description ? `<div class="d-sec"><h3>Maelezo</h3><div class="desc">${esc(l.description)}</div></div>` : ''}
         <div class="d-sec"><h3>Taarifa muhimu</h3><div class="kvbox">${kv.map(([k, v]) => `<div class="kv"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')}</div></div>
         ${l.payment_plan ? `<div class="d-sec"><h3>Mpango wa malipo</h3><div class="desc">${esc(l.payment_plan)}</div></div>` : ''}
-        ${l.lat ? `<div class="d-sec"><h3>Mahali</h3><div class="map" id="lmap" style="border-radius:20px"></div><p class="muted tiny mt-s">Ramani inaonyesha eneo kwa kukadiria. Mahali halisi utaelezwa na muuzaji.</p></div>` : ''}
+        ${l.lat ? `<div class="d-sec"><h3>Mahali</h3><div class="map" id="lmap" style="border-radius:20px"></div><p class="muted tiny mt-s">Eneo la kukadiria.</p></div>` : ''}
         <div class="d-sec">
-          <div class="safe"><b><i class="ti ti-shield-check gold"></i> Kaa salama</b>
-            <p class="small muted" style="margin:6px 0 0">Usitume pesa kabla ya kuona mali na kuhakikisha mmiliki. Ukiona dalili za utapeli, ripoti tangazo hili.</p></div>
-          <div class="row between mt"><span class="muted tiny">Tangazo #${l.id} · ${E.timeAgo(l.created_at)} · Limeonwa mara ${l.views}</span>
+          <div class="safe small"><i class="ti ti-shield-check gold"></i> Usitume pesa kabla ya kuona mali.</div>
+          <div class="row between mt"><span class="muted tiny">#${l.id} · ${E.timeAgo(l.created_at)} · ${l.views} wameona</span>
           <button class="report-link" id="report"><i class="ti ti-flag"></i> Ripoti</button></div>
         </div>
       </div>
@@ -435,8 +434,8 @@
         <a class="wa-btn" href="${waUrl}" target="_blank" rel="noopener" data-lead="wa"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>
         <div class="cta-more">
           <div class="host" data-store="${esc(s.slug)}" style="cursor:pointer;background:rgba(255,255,255,.6)"><div class="avatar">${avatar}</div>
-            <div style="min-width:0"><div class="nm">${esc(sname)}${E.verifyIcon(s)}</div><div class="muted small">${esc(E.ACCT[s.account_type] || '')} · Angalia matangazo yake</div></div></div>
-          <p class="tiny muted" style="margin:10px 0 0"><i class="ti ti-shield-check gold"></i> Usitume pesa kabla ya kuona mali.</p>
+            <div style="min-width:0"><div class="nm">${esc(sname)}${E.verifyIcon(s)}</div><div class="muted small">${esc(E.ACCT[s.account_type] || '')}</div></div></div>
+          
         </div>
       </div></aside></div>
       <div id="similar"></div>
@@ -478,22 +477,25 @@
   }
 
   function reportModal(id) {
-    const m = E.modal(`<h2>Ripoti tangazo</h2><p class="muted small">Tueleze tatizo. Timu ya 88EST italichunguza.</p>
+    const m = E.modal(`<h2>Ripoti tangazo</h2>
       <form id="rf">
         ${Object.entries(E.REPORTS).map(([k, t], i) => `<label class="check" style="margin-bottom:6px"><input type="radio" name="reason" value="${k}" ${i === 0 ? 'checked' : ''}> ${t}</label>`).join('')}
         <div class="field mt"><textarea class="input" name="details" placeholder="Maelezo zaidi (si lazima)" style="min-height:80px"></textarea></div>
         <div class="field"><input class="input" name="phone" inputmode="tel" placeholder="Namba yako ya simu (si lazima)"></div>
+        <div id="capRp"></div>
         <button class="btn btn-dark btn-block">Tuma ripoti</button>
       </form>`);
+    let cap = null;
+    E.captcha(m.querySelector('#capRp')).then((c) => { cap = c; });
     m.querySelector('#rf').onsubmit = async (e) => {
       e.preventDefault();
-      const btn = e.target.querySelector('button');
+      const btn = e.target.querySelector('button.btn');
       E.busy(btn, true);
       try {
-        const r = await E.api('/api/listings/' + id + '/report', { body: E.formData(e.target), token: '' });
+        const r = await E.api('/api/listings/' + id + '/report', { body: { ...E.formData(e.target), captcha: E.capToken(cap) }, token: '' });
         E.closeModal();
         E.toast(r.message || 'Asante kwa ripoti', 'ok');
-      } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
+      } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); if (cap) cap.reset(); }
     };
   }
 
@@ -538,32 +540,35 @@
         </div>
       </div>
       <div class="sec-h"><h2>Matangazo (${d.listings.length})</h2></div>
-      ${d.listings.length ? `<div class="grid">${d.listings.map(listCard).join('')}</div>` : '<div class="empty small">Hana matangazo yaliyo hewani kwa sasa.</div>'}
+      ${d.listings.length ? `<div class="grid">${d.listings.map(listCard).join('')}</div>` : '<div class="empty small">Hakuna matangazo kwa sasa.</div>'}
       <div class="sec-h"><h2>Maoni ya wateja</h2><button class="see-all glass" id="rateBtn"><i class="ti ti-star"></i> Toa maoni</button></div>
-      <div class="card glass" style="margin:0 18px">${d.ratings.length ? d.ratings.map((r) => `<div class="rating-item"><div class="row between"><b class="small">${esc(r.name)}</b>${E.stars(r.stars)}</div>${r.comment ? `<div class="small" style="margin-top:4px">${esc(r.comment)}</div>` : ''}<div class="muted tiny">${E.date(r.created_at)}</div></div>`).join('') : '<p class="muted small" style="margin:0">Bado hakuna maoni. Kama umewahi kuhudumiwa naye, toa maoni yako.</p>'}</div>`;
+      <div class="card glass" style="margin:0 18px">${d.ratings.length ? d.ratings.map((r) => `<div class="rating-item"><div class="row between"><b class="small">${esc(r.name)}</b>${E.stars(r.stars)}</div>${r.comment ? `<div class="small" style="margin-top:4px">${esc(r.comment)}</div>` : ''}<div class="muted tiny">${E.date(r.created_at)}</div></div>`).join('') : '<p class="muted small" style="margin:0">Bado hakuna maoni.</p>'}</div>`;
     $('#shareStore').onclick = () => share(name, location.origin + '/a/' + s.slug);
     $('#rateBtn').onclick = () => rateModal(s.slug);
   }
 
   function rateModal(slug) {
-    const m = E.modal(`<h2>Toa maoni</h2><p class="muted small">Maoni yako yanasaidia wengine kuchagua muuzaji mwaminifu.</p>
+    const m = E.modal(`<h2>Toa maoni</h2>
       <form id="rtf">
         <div class="field"><label>Nyota</label><div class="seg">${[1, 2, 3, 4, 5].map((n) => `<label><input type="radio" name="stars" value="${n}" ${n === 5 ? 'checked' : ''}><span>${n} <i class="ti ti-star"></i></span></label>`).join('')}</div></div>
         <div class="field"><input class="input" name="name" placeholder="Jina lako" required></div>
         <div class="field"><input class="input" name="phone" inputmode="tel" placeholder="Namba yako ya simu (haitaonekana)" required></div>
-        <div class="field"><textarea class="input" name="comment" placeholder="Uzoefu wako na muuzaji huyu" style="min-height:80px"></textarea></div>
+        <div class="field"><textarea class="input" name="comment"  placeholder="Maoni (si lazima)" style="min-height:80px"></textarea></div>
+        <div id="capRt"></div>
         <button class="btn btn-gold btn-block">Tuma maoni</button>
       </form>`);
+    let cap = null;
+    E.captcha(m.querySelector('#capRt')).then((c) => { cap = c; });
     m.querySelector('#rtf').onsubmit = async (e) => {
       e.preventDefault();
-      const btn = e.target.querySelector('button');
+      const btn = e.target.querySelector('button.btn');
       E.busy(btn, true);
       try {
-        await E.api('/api/sellers/' + encodeURIComponent(slug) + '/rate', { body: E.formData(e.target), token: '' });
+        await E.api('/api/sellers/' + encodeURIComponent(slug) + '/rate', { body: { ...E.formData(e.target), captcha: E.capToken(cap) }, token: '' });
         E.closeModal();
         E.toast('Asante kwa maoni yako', 'ok');
         storePage(slug);
-      } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
+      } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); if (cap) cap.reset(); }
     };
   }
 
@@ -608,7 +613,7 @@
     const ids = favs.get();
     view.innerHTML = `${header()}<div class="page-h" style="padding-top:4px"><h1>Vipendwa vyako</h1></div><div id="fv">${ids.length ? skelGrid() : ''}</div>`;
     if (!ids.length) {
-      $('#fv').innerHTML = '<div class="empty"><i class="ti ti-heart"></i>Bado hujahifadhi mali yoyote.<br>Bonyeza moyo kwenye tangazo kulihifadhi hapa.</div>';
+      $('#fv').innerHTML = '<div class="empty"><i class="ti ti-heart"></i>Bonyeza moyo kwenye tangazo kulihifadhi hapa.</div>';
       return;
     }
     try {
@@ -616,7 +621,7 @@
       const order = new Map(ids.map((id, i) => [id, i]));
       r.items.sort((a, b) => order.get(a.id) - order.get(b.id));
       if (r.items[0]) setBg(E.img(r.items[0].photo));
-      $('#fv').innerHTML = r.items.length ? `<div class="grid">${r.items.map(listCard).join('')}</div>` : '<div class="empty">Mali ulizohifadhi hazipo hewani tena.</div>';
+      $('#fv').innerHTML = r.items.length ? `<div class="grid">${r.items.map(listCard).join('')}</div>` : '<div class="empty">Ulizohifadhi hazipo hewani tena.</div>';
     } catch (e) {
       $('#fv').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
     }
@@ -630,32 +635,31 @@
     view.innerHTML = `
       ${header()}
       <div style="padding:8px 18px">
-        <div class="card" style="background:linear-gradient(155deg,#26282D,#1A1B1F);color:var(--off)">
+        <div class="card" style="background:var(--charcoal);color:var(--off)">
           <h2 style="color:#fff">Una mali ya kupangisha au kuuza?</h2>
-          <p class="small" style="opacity:.85">Madalali, developers na wenye mali: jisajili bure na weka matangazo yako. Wateja watakupigia moja kwa moja.</p>
+          <p class="small" style="opacity:.85">Jisajili bure na weka tangazo. Wateja wanakupigia moja kwa moja.</p>
           <a class="btn btn-gold btn-block mt" style="border-radius:26px" href="/portal.html">${loggedIn ? 'Fungua dashibodi yangu' : 'Jisajili au ingia'}</a>
         </div>
         <div class="card glass">
           <h3>Lugha / Language</h3>
-          <p class="small muted">Badilisha lugha ya app nzima.</p>
           ${E.langButton()}
         </div>
         <div class="card glass">
           <h3>Kuhusu 88EST</h3>
-          <p class="small muted">88EST ni soko la mtandaoni la mali Tanzania: nyumba, apartment, vyumba, viwanja, mashamba, frame, ofisi, maghala, short stay na miradi ya developers. 88EST ni jukwaa la kuunganisha tu; makubaliano ni kati ya mteja na muuzaji.</p>
-          <a class="row gap mt" href="https://wa.me/${esc(c.support_phone || '')}" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp gold"></i> Wasiliana nasi: +${esc(c.support_phone || '')}</a>
+          <p class="small muted">Soko la mali Tanzania. 88EST inaunganisha wateja na wauzaji; makubaliano ni kati yao.</p>
+          <a class="row gap mt" href="https://wa.me/${esc(c.support_phone || '')}" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp gold"></i> +${esc(c.support_phone || '')}</a>
           <a class="row gap mt-s" href="mailto:${esc(c.support_email || '')}"><i class="ti ti-mail gold"></i> ${esc(c.support_email || '')}</a>
         </div>
         ${installBar()}
       </div>
-      <div class="footer-note">88EST · Huduma ya HUGO TECH</div>`;
+      <div class="footer-note">88EST · HUGO TECH</div>`;
     bindInstall();
   }
 
   // ===== Kuweka app kwenye simu (PWA) =====
   function installBar() {
     if (!S.installEvt) return '<div id="installBox"></div>';
-    return `<div id="installBox"><div class="install-bar">${E.logoIcon(40)}<div class="grow"><b>Weka 88EST kwenye simu</b><div class="tiny" style="opacity:.8">Fungua haraka kama app</div></div><button class="btn btn-gold btn-sm" id="installBtn">Weka</button></div></div>`;
+    return `<div id="installBox"><div class="install-bar">${E.logoIcon(40)}<div class="grow"><b>Weka 88EST kwenye simu</b></div><button class="btn btn-gold btn-sm" id="installBtn">Weka</button></div></div>`;
   }
   function bindInstall() {
     const b = $('#installBtn');

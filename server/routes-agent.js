@@ -131,26 +131,26 @@ function builtInAnswer(t, s) {
   const low = ' ' + t.toLowerCase() + ' ';
   const phone = '+' + (s.support_phone || '');
   if (/^\s*(habari|mambo|hello|hi|hey|hujambo|salama|niaje|shikamoo|good (morning|afternoon|evening)|sasa)\b/.test(low.trim()) && low.trim().split(/\s+/).length <= 4) {
-    return { reply: 'Karibu 88EST! Unatafuta nini: kupanga, kununua au short stay? Niambie eneo na bajeti yako.', chips: ['Nyumba ya kupanga', 'Kiwanja cha kununua', 'Short stay', 'Frame ya biashara'] };
+    return { reply: 'Karibu! Unatafuta nini, wapi, na bajeti gani?', chips: ['Nyumba ya kupanga', 'Kiwanja cha kununua', 'Short stay', 'Frame ya biashara'] };
   }
   if (/asante|thank/.test(low)) return { reply: 'Karibu sana! Ukihitaji kitu kingine, niulize tu.', chips: [] };
   if (/weka tangazo|kuweka tangazo|kutangaza|\bpost\b|nataka kupangisha|nataka kuuza|nina nyumba ya|nina kiwanja|nina frame|jisajili|kujiunga|dalali.*(jiunge|sajili)/.test(low)) {
-    return { reply: 'Jisajili bure kwenye portal ya wauzaji, kisha bonyeza "Weka tangazo". Tangazo linaonekana baada ya kukaguliwa.', link: { label: 'Fungua portal', url: '/portal.html#/register' } };
+    return { reply: 'Jisajili bure, kisha bonyeza "Weka tangazo".', link: { label: 'Fungua portal', url: '/portal.html#/register' } };
   }
   if (/\bpro\b|verified|beji|badge|kifurushi/.test(low)) {
-    return { reply: `Pro ni TZS ${Number(s.pro_price_month || 0).toLocaleString('en-US')} kwa mwezi: matangazo yako yanakaa juu, unapata beji ya Verified (baada ya ukaguzi) na nafasi ya matangazo ${s.pro_limit}.`, link: { label: 'Jiunge na Pro', url: '/portal.html#/pro' } };
+    return { reply: `Pro ni TZS ${Number(s.pro_price_month || 0).toLocaleString('en-US')} kwa mwezi: matangazo juu, beji ya Verified na nafasi ya matangazo ${s.pro_limit}.`, link: { label: 'Jiunge na Pro', url: '/portal.html#/pro' } };
   }
   if (/utapeli|tapeli|\bscam|fraud|salama|usalama|kudanganywa/.test(low)) {
-    return { reply: 'Usitume pesa kabla ya kuona mali na kuthibitisha mmiliki. Chagua wauzaji wenye beji ya Verified, na ripoti tangazo lenye shaka kwa kitufe cha "Ripoti".', chips: [] };
+    return { reply: 'Usitume pesa kabla ya kuona mali. Pendelea wauzaji wenye Verified, na ripoti tangazo lenye shaka.', chips: [] };
   }
   if (/nawasilianaje|kumpata (dalali|muuzaji)|namba ya (dalali|muuzaji)|kumpigia/.test(low)) {
-    return { reply: 'Fungua tangazo unalolipenda, kisha bonyeza "Piga" au "WhatsApp" kuwasiliana na muuzaji moja kwa moja.', chips: [] };
+    return { reply: 'Fungua tangazo, kisha bonyeza "Piga" au "WhatsApp".', chips: [] };
   }
   if (/wasiliana na(nyi| 88est)|mawasiliano yenu|namba yenu|customer care|\bsupport\b|huduma kwa wateja/.test(low)) {
     return { reply: `Wasiliana na timu ya 88EST kwa WhatsApp ${phone} au ${s.support_email}.`, link: { label: 'WhatsApp 88EST', url: 'https://wa.me/' + (s.support_phone || '') } };
   }
   if (/ada ya udalali|commission|kamisheni/.test(low)) {
-    return { reply: 'Ada ya udalali inawekwa na kila muuzaji na inaonekana kwenye tangazo husika (sehemu ya "Taarifa muhimu").', chips: [] };
+    return { reply: 'Kila muuzaji anaweka ada yake; iko kwenye "Taarifa muhimu" za tangazo.', chips: [] };
   }
   return null;
 }
@@ -274,7 +274,7 @@ ${s.agent_faq ? 'Taarifa za ziada:\n' + String(s.agent_faq).slice(0, 2000) : ''}
 module.exports = function (app) {
   app.post('/api/agent/chat', async (req, res) => {
     const s = await db.getSettings();
-    if (s.agent_enabled === '0') return res.json({ reply: 'Msaidizi hapatikani kwa sasa. Tumia kitufe cha kutafuta juu.', listings: [] });
+    if (s.agent_enabled === '0') return res.json({ reply: 'Msaidizi hapatikani kwa sasa.', listings: [] });
     const ip = U.clientIp(req);
     U.rateLimit('agent:' + ip, 80, 24 * 3600e3);
     const text = String(req.body.message || '').trim().slice(0, 500);
@@ -310,7 +310,7 @@ module.exports = function (app) {
         let reply;
         if (r.total && !relaxed) reply = r.total === 1 ? `Nimepata tangazo 1 la ${what}. Hili hapa:` : `Nimepata matangazo ${r.total} ya ${what}. ${r.total > 6 ? 'Haya ni bora zaidi:' : 'Haya hapa:'}`;
         else if (r.total) reply = `Hakuna yanayolingana kabisa na ${what}, lakini haya yanakaribiana:`;
-        else reply = `Kwa sasa hakuna ${what}. Jaribu eneo jingine au ongeza bajeti.`;
+        else reply = `Hakuna ${what} kwa sasa. Jaribu eneo jingine au bajeti kubwa zaidi.`;
         const chips = missingChips(merged);
         out = { reply, listings: r.items, chips, ctx: merged, more: r.total > 6 ? merged : null };
       }
@@ -332,7 +332,7 @@ module.exports = function (app) {
         out = { reply: ai.reply, listings: ai.listings, ctx: ai.ctx || ctx, chips: ai.listings.length ? [] : ['Nyumba ya kupanga', 'Kiwanja', 'Short stay'] };
       } else {
         source = 'fallback';
-        out = { reply: 'Sijaelewa vizuri. Niambie aina ya mali, eneo na bajeti. Mfano: "Nyumba ya kupanga Sinza chini ya 500k".', chips: ['Nyumba ya kupanga Dar', 'Kiwanja Kigamboni', 'Short stay Arusha', 'Nawezaje kuweka tangazo?'] };
+        out = { reply: 'Sijakuelewa. Mfano: "nyumba ya kupanga Sinza chini ya 500k".', chips: ['Nyumba ya kupanga Dar', 'Kiwanja Kigamboni', 'Short stay Arusha', 'Nawezaje kuweka tangazo?'] };
       }
     }
 

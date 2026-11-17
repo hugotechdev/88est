@@ -64,12 +64,6 @@ h1 { font-size: 24px; } h2 { font-size: 19px; } h3 { font-size: 16px; }
 .btn-wa { background: #1FAF55; color: #fff; }
 .btn-block { width: 100%; }
 .btn-sm { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
-.icon-btn {
-  width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--white);
-  display: inline-flex; align-items: center; justify-content: center; font-size: 20px; color: var(--charcoal);
-  box-shadow: 0 2px 10px rgba(0,0,0,.12);
-}
-.icon-btn.on { color: #E0475B; }
 .spin { width: 15px; height: 15px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -149,6 +143,9 @@ textarea.input { min-height: 110px; resize: vertical; }
 .empty i { font-size: 44px; color: var(--grey2); display: block; margin-bottom: 8px; }
 .skel { background: linear-gradient(90deg, #ECEBE7 25%, #F5F4F0 37%, #ECEBE7 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite; border-radius: 14px; }
 @keyframes sk { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+/* Turnstile */
+.cap { margin: 4px 0 14px; min-height: 65px; }
 
 /* Google Translate: ficha bango lake, tumia switch yetu */
 .goog-te-banner-frame, iframe.skiptranslate, .skiptranslate > iframe, #goog-gt-tt, .goog-te-balloon-frame, .goog-tooltip, .VIpgJd-ZVi9od-ORHb-OEVmcd, .VIpgJd-ZVi9od-aZ2wEe-wOHMyf { display: none !important; }

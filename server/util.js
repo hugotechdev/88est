@@ -158,6 +158,29 @@ async function sendEmail(to, subject, title, bodyHtml) {
   return false;
 }
 
+// ===== Cloudflare Turnstile (kuzuia bots) =====
+// Weka TURNSTILE_SITE_KEY na TURNSTILE_SECRET_KEY kwenye Railway. Bila hizo, ukaguzi huu unarukwa.
+async function verifyCaptcha(req) {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) return;
+  const token = String(req.body.captcha || '');
+  need(token, 'Subiri uthibitisho wa usalama ukamilike, kisha jaribu tena.');
+  let ok = false;
+  try {
+    const r = await fetch(process.env.TURNSTILE_VERIFY_URL || 'https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ secret, response: token, remoteip: clientIp(req) }).toString(),
+    });
+    const j = await r.json();
+    ok = !!j.success;
+    if (!ok) console.log('Turnstile imekataa:', JSON.stringify(j['error-codes'] || []));
+  } catch (e) {
+    console.log('Turnstile haipatikani:', e.message);
+  }
+  need(ok, 'Uthibitisho wa usalama umeshindwa. Jaribu tena.');
+}
+
 // Kuzuia mtu kujaribu mara nyingi sana (mf. kubahatisha password)
 const hits = new Map();
 function rateLimit(key, max, windowMs) {
@@ -180,5 +203,5 @@ function esc(s) {
 module.exports = {
   CATEGORIES, DEALS, PERIODS, ACCOUNT_TYPES, AMENITIES, REPORT_REASONS,
   normPhone, slugify, uniqueSlug, str, int, num, bool, need, isEmail, isPro, isAdmin,
-  publicSeller, selfUser, sendEmail, rateLimit, clientIp, esc,
+  publicSeller, selfUser, sendEmail, rateLimit, clientIp, esc, verifyCaptcha,
 };

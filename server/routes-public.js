@@ -107,6 +107,7 @@ module.exports = function (app) {
       free_limit: Number(s.free_limit),
       pro_limit: Number(s.pro_limit),
       pay_instructions: s.pay_instructions,
+      turnstile_site_key: process.env.TURNSTILE_SECRET_KEY ? process.env.TURNSTILE_SITE_KEY || '' : '',
     });
   });
 
@@ -162,6 +163,7 @@ module.exports = function (app) {
   app.post('/api/listings/:id/report', async (req, res) => {
     const id = U.int(req.params.id, 1);
     U.rateLimit('report:' + U.clientIp(req), 5, 3600e3);
+    await U.verifyCaptcha(req);
     const reason = req.body.reason;
     U.need(U.REPORT_REASONS.includes(reason), 'Chagua sababu ya kuripoti');
     const l = await db.one('SELECT id FROM listings WHERE id = $1', [id]);
@@ -212,6 +214,7 @@ module.exports = function (app) {
   // Kumpa muuzaji nyota
   app.post('/api/sellers/:slug/rate', async (req, res) => {
     U.rateLimit('rate:' + U.clientIp(req), 5, 3600e3);
+    await U.verifyCaptcha(req);
     const u = await db.one("SELECT id FROM users WHERE slug = $1 AND role = 'seller' AND status = 'active'", [req.params.slug]);
     if (!u) throw httpError(404, 'Muuzaji hapatikani');
     const stars = U.int(req.body.stars, 1, 5);
