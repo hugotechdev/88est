@@ -11,6 +11,8 @@ const SELLER_PRO_SQL = "(u.plan = 'pro' AND u.pro_until > now())";
 const CARD_FIELDS = `l.id, l.title, l.category, l.deal, l.price, l.price_period, l.negotiable, l.region, l.district, l.ward,
   l.bedrooms, l.bathrooms, l.size, l.size_unit, l.photos, l.created_at, l.units_available, l.project_status,
   ${FEATURED_SQL} AS is_featured,
+  (SELECT count(*) FROM plots p WHERE p.listing_id = l.id) AS plots_total,
+  (SELECT count(*) FROM plots p WHERE p.listing_id = l.id AND p.status = 'available') AS plots_available,
   u.name AS seller_name, u.business_name AS seller_business, u.slug AS seller_slug,
   u.verify_level AS seller_verify, u.account_type AS seller_type, ${SELLER_PRO_SQL} AS seller_pro,
   (SELECT round(avg(r.stars)::numeric, 1) FROM ratings r WHERE r.user_id = u.id) AS seller_rating,
@@ -26,6 +28,7 @@ function cardRow(r) {
     size: r.size == null ? null : Number(r.size), size_unit: r.size_unit,
     photo: photos[0] || null, photo_count: photos.length,
     units_available: r.units_available, project_status: r.project_status,
+    plots_total: Number(r.plots_total || 0), plots_available: Number(r.plots_available || 0),
     featured: !!r.is_featured, created_at: r.created_at,
     seller: {
       name: r.seller_business || r.seller_name, slug: r.seller_slug,
@@ -84,6 +87,12 @@ async function searchListings(query) {
 async function sellerRating(userId) {
   const r = await db.one('SELECT round(avg(stars)::numeric, 1) AS avg, count(*) AS n FROM ratings WHERE user_id = $1', [userId]);
   return { avg: r && r.avg != null ? Number(r.avg) : null, count: Number(r ? r.n : 0) };
+}
+
+async function plotSummary(listingId) {
+  const r = await db.one(`SELECT count(*) AS total, count(*) FILTER (WHERE status = 'available') AS available,
+      min(price) FILTER (WHERE status = 'available') AS min_price FROM plots WHERE listing_id = $1`, [listingId]);
+  return { total: Number(r.total), available: Number(r.available), min_price: r.min_price == null ? null : Number(r.min_price) };
 }
 
 function baseUrl(req) {
@@ -147,8 +156,22 @@ module.exports = function (app) {
       project_status: l.project_status, payment_plan: l.payment_plan,
       status: l.status, featured: !!(l.featured && (!l.featured_until || new Date(l.featured_until) > new Date())),
       views: l.views, created_at: l.created_at, updated_at: l.updated_at,
+      siteplan: l.siteplan && l.siteplan.image ? { ...l.siteplan, ...(await plotSummary(l.id)) } : null,
       seller: { ...U.publicSeller(seller), rating: await sellerRating(seller.id) },
     });
+  });
+
+  // Viwanja vya mchoro wa tangazo
+  app.get('/api/listings/:id/plots', async (req, res) => {
+    const id = U.int(req.params.id, 1);
+    const l = await db.one('SELECT l.id, l.user_id, l.status, l.siteplan, u.status AS seller_status FROM listings l JOIN users u ON u.id = l.user_id WHERE l.id = $1', [id]);
+    if (!l) throw httpError(404, 'Tangazo halipatikani');
+    if (!(l.status === 'approved' && l.seller_status === 'active')) {
+      const me = await loadUser(req);
+      if (!me || !(U.isAdmin(me) || me.id === l.user_id)) throw httpError(404, 'Tangazo halipatikani');
+    }
+    const plots = await db.q('SELECT id, number, size, price, status, points FROM plots WHERE listing_id = $1 ORDER BY sort, id', [id]);
+    res.json({ siteplan: l.siteplan, plots: plots.map((p) => ({ ...p, size: p.size == null ? null : Number(p.size), price: p.price == null ? null : Number(p.price) })) });
   });
 
   // Kuhesabu mteja aliyebonyeza Piga au WhatsApp

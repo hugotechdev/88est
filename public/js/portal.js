@@ -334,6 +334,7 @@
           <div class="acts">
             <a class="btn btn-ghost btn-sm" href="#/edit/${l.id}"><i class="ti ti-edit"></i> Hariri</a>
             <a class="btn btn-ghost btn-sm" href="/#/l/${l.id}" target="_blank"><i class="ti ti-eye"></i> Ona</a>
+            ${['kiwanja', 'shamba', 'mradi'].includes(l.category) ? `<a class="btn btn-ghost btn-sm" href="#/plan/${l.id}"><i class="ti ti-map-2"></i> Mchoro wa viwanja</a>` : ''}
             ${l.status === 'approved' ? `<button class="btn btn-ghost btn-sm" data-act="taken" data-id="${l.id}"><i class="ti ti-check"></i> Imechukuliwa</button>` : ''}
             ${l.status === 'approved' ? `<button class="btn btn-ghost btn-sm" data-act="share" data-id="${l.id}"><i class="ti ti-share"></i> Shiriki</button>` : ''}
             ${l.status === 'taken' ? `<button class="btn btn-ghost btn-sm" data-act="relist" data-id="${l.id}"><i class="ti ti-refresh"></i> Rudisha hewani</button>` : ''}
@@ -550,9 +551,23 @@
         const saved = await E.api(id ? '/api/my/listings/' + id : '/api/my/listings', { method: id ? 'PUT' : 'POST', body: d });
         await loadMe();
         E.toast(saved.status === 'approved' ? 'Tangazo liko hewani' : 'Limetumwa; litaonekana baada ya kukaguliwa', 'ok');
-        location.hash = '#/listings';
+        location.hash = !id && ['kiwanja', 'shamba', 'mradi'].includes(saved.category) ? '#/plan/' + saved.id : '#/listings';
       } catch (err) { E.toast(err.message, 'err'); E.busy(btn, false); }
     };
+  }
+
+  // ===== Mchoro wa viwanja =====
+  async function planPage(id) {
+    const main = shell('/listings');
+    main.innerHTML = '<div class="empty"><span class="spin"></span></div>';
+    let d;
+    try { d = await E.api('/api/my/listings/' + id + '/plan'); } catch (e) { main.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+    main.innerHTML = `
+      <div class="row gap mb"><a href="#/listings" class="btn btn-ghost btn-sm"><i class="ti ti-arrow-left"></i></a>
+        <div><h1 style="margin:0">Mchoro wa viwanja</h1><div class="small muted">${esc(d.listing.title)}</div></div></div>
+      <div class="form-sec" id="planEd"></div>
+      <p class="small muted">Wateja wanaona mchoro huu kwenye tangazo, wanachagua viwanja vinavyopatikana, na wanakuulizia kwa WhatsApp wakitaja namba za viwanja.</p>`;
+    window.SitePlan.editor($('#planEd'), d, { listingId: id, unit: d.listing.size_unit || 'sqm' });
   }
 
   // ===== Wasifu =====
@@ -765,6 +780,8 @@
     if (!S.me.terms_accepted && !IMP) return termsGate();
     const m = h.match(/^\/edit\/(\d+)/);
     if (m) return listingForm(m[1]);
+    const pm = h.match(/^\/plan\/(\d+)/);
+    if (pm) return planPage(pm[1]);
     if (h === '/listings') return myListings();
     if (h === '/new') return listingForm(null);
     if (h === '/profile') return profile();

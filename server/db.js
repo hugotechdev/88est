@@ -104,6 +104,22 @@ CREATE INDEX IF NOT EXISTS listings_status_idx ON listings(status);
 CREATE INDEX IF NOT EXISTS listings_user_idx ON listings(user_id);
 CREATE INDEX IF NOT EXISTS listings_region_idx ON listings(region, district);
 
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS siteplan JSONB;
+
+-- Viwanja kwenye mchoro (site plan) wa tangazo la viwanja/mashamba/mradi
+CREATE TABLE IF NOT EXISTS plots (
+  id SERIAL PRIMARY KEY,
+  listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+  number TEXT NOT NULL,
+  size NUMERIC,
+  price BIGINT,
+  status TEXT NOT NULL DEFAULT 'available',
+  points JSONB NOT NULL,
+  sort INTEGER NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS plots_listing_idx ON plots(listing_id);
+
 CREATE TABLE IF NOT EXISTS verifications (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

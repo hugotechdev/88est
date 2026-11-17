@@ -155,3 +155,48 @@ font { background: none !important; box-shadow: none !important; }
 .lang-btn { height: 36px; border-radius: 20px; padding: 0 12px; display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; border: 1px solid var(--line); background: var(--white); color: var(--charcoal); }
 .lang-btn i { font-size: 17px; color: var(--gold-d); }
 .lang-btn.dark { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.15); color: var(--off); }
+
+/* ===== Mchoro wa viwanja ===== */
+.sp-legend { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.sp-key { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 14px; display: inline-flex; align-items: center; gap: 6px; }
+.sp-key::before { content: ''; width: 10px; height: 10px; border-radius: 3px; background: currentColor; opacity: .7; }
+.sp-key.sp-av, .badge.sp-av { background: #E3F4EA; color: #2E7D4F; }
+.sp-key.sp-rs, .badge.sp-rs { background: #FFF4D6; color: #8A6400; }
+.sp-key.sp-sd, .badge.sp-sd { background: #FBEAEA; color: #B03A2E; }
+.sp-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.sp-btn { border: 1px solid var(--line); background: #fff; border-radius: 10px; height: 36px; min-width: 36px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--charcoal); }
+.sp-tg { font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.sp-tg input { accent-color: var(--gold); width: 16px; height: 16px; }
+.sp-view { position: relative; overflow: auto; max-height: 62vh; border-radius: 16px; background: #EDEAE4; border: 1px solid var(--line); -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
+.sp-inner { position: relative; width: 100%; transition: width .2s; }
+.sp-inner img { width: 100%; display: block; user-select: none; -webkit-user-select: none; pointer-events: none; }
+.sp-inner svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sp-p { cursor: pointer; }
+.sp-p polygon { stroke-width: 1.5; vector-effect: non-scaling-stroke; transition: fill .15s; }
+.sp-p text { text-anchor: middle; dominant-baseline: central; font-weight: 700; fill: #1F2125; paint-order: stroke; stroke: rgba(255,255,255,.85); stroke-width: 3px; pointer-events: none; font-family: inherit; }
+.sp-p.sp-av polygon { fill: rgba(46,160,90,.32); stroke: #2E7D4F; }
+.sp-p.sp-rs polygon { fill: rgba(230,170,30,.45); stroke: #A07A16; }
+.sp-p.sp-sd polygon { fill: rgba(200,60,50,.45); stroke: #B03A2E; }
+.sp-p.sp-sel polygon { fill: rgba(201,162,74,.85); stroke: #1F2125; stroke-width: 3; }
+.sp-p.sp-dim { opacity: .25; }
+.sp-p:hover polygon { filter: brightness(1.08); }
+.sp-info { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.sp-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+.sp-chosen { background: #FFF8E6; border: 1px solid #F0D98F; border-radius: 14px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sp-table { margin-top: 10px; max-height: 360px; overflow: auto; border-radius: 14px; }
+.sp-tbl td, .sp-tbl th { padding: 7px 10px; }
+.sp-tbl tr { cursor: pointer; }
+.sp-tbl tr.on td { background: #FFF8E6; }
+.sp-tbl .sp-st { padding: 6px 8px; font-size: 13px; width: auto; }
+.sp-modes { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.sp-modes button { border: 1px solid var(--line); background: #fff; border-radius: 20px; padding: 8px 14px; font-size: 13px; font-weight: 600; display: inline-flex; gap: 6px; align-items: center; }
+.sp-modes button.on { background: var(--charcoal); border-color: var(--charcoal); color: #fff; }
+.sp-hint { background: var(--off); border-radius: 12px; padding: 9px 12px; margin-bottom: 8px; color: var(--char2); }
+.sp-cross svg { cursor: crosshair; }
+.sp-draft { fill: rgba(201,162,74,.25); stroke: #1F2125; stroke-width: 2; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; }
+.sp-dot { fill: #C9A24A; stroke: #1F2125; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.sp-dot-t { font-weight: 800; fill: #1F2125; paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+.sp-save.sp-dirty::after { content: ' •'; }
+.plan-sum { display: flex; gap: 10px; align-items: center; background: #fff; border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; font-size: 14px; }
+.plan-sum i { font-size: 24px; color: var(--gold-d); }
+.sp-ed .sticky-save { position: static; background: none; padding: 14px 0 0; }

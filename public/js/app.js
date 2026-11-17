@@ -64,7 +64,8 @@
     if (l.bedrooms) f.push(`<span><i class="ti ti-bed"></i>${l.bedrooms}</span>`);
     if (l.bathrooms) f.push(`<span><i class="ti ti-bath"></i>${l.bathrooms}</span>`);
     if (l.size) f.push(`<span><i class="ti ti-ruler-2"></i>${Number(l.size).toLocaleString('en-US')} ${esc(l.size_unit || '')}</span>`);
-    if (l.category === 'mradi' && l.units_available != null) f.push(`<span><i class="ti ti-building"></i>${l.units_available} zimebaki</span>`);
+    if (l.plots_total) f.push(`<span><i class="ti ti-map-2"></i>${l.plots_available}/${l.plots_total} vipo</span>`);
+    else if (l.category === 'mradi' && l.units_available != null) f.push(`<span><i class="ti ti-building"></i>${l.units_available} zimebaki</span>`);
     return f.length ? `<div class="facts-inline">${f.join('')}</div>` : '';
   }
   function heroCard(l) {
@@ -418,6 +419,9 @@
         </div>
 
         <div class="safe-line"><i class="ti ti-shield-check"></i> Usilipe kabla ya kukutana na muuzaji na kuiona mali.</div>
+        ${l.siteplan ? `<div class="d-sec" id="planSec"><h3>Chagua kiwanja kwenye mchoro</h3>
+          <div class="plan-sum"><i class="ti ti-map-2"></i><div><b>${l.siteplan.available} kati ya ${l.siteplan.total}</b> vinapatikana${l.siteplan.min_price ? ` · kuanzia <b class="notranslate" translate="no">${E.money(l.siteplan.min_price)}</b>` : ''}</div></div>
+          <div id="planBox"><div class="skel" style="height:260px"></div></div><div id="planAsk"></div></div>` : ''}
         ${l.amenities.length ? `<div class="d-sec"><h3>Huduma zilizopo</h3><div class="amen">${l.amenities.map((a) => E.AMEN[a] ? `<div><i class="ti ${E.AMEN[a][1]}"></i>${esc(E.AMEN[a][0])}</div>` : '').join('')}</div></div>` : ''}
         ${l.description ? `<div class="d-sec"><h3>Maelezo</h3><div class="desc">${esc(l.description)}</div></div>` : ''}
         <div class="d-sec"><h3>Taarifa muhimu</h3><div class="kvbox">${kv.map(([k, v]) => `<div class="kv"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')}</div></div>
@@ -449,12 +453,32 @@
         $('#gcount').textContent = i + ' / ' + photos.length;
       }, { passive: true });
     }
-    sheetInner.querySelectorAll('[data-lead]').forEach((a) => a.addEventListener('click', (e) => {
+    sheetInner.onclick = (e) => {
+      const a = e.target.closest('[data-lead]');
+      if (!a) return;
       const track = () => fetch('/api/listings/' + l.id + '/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: a.dataset.lead }), keepalive: true }).catch(() => {});
       if (safetyOk()) return track();
       e.preventDefault();
       safetyModal(a, track);
-    }));
+    };
+    // Mchoro wa viwanja
+    if (l.siteplan && window.SitePlan) {
+      E.api('/api/listings/' + l.id + '/plots', { token: localStorage.getItem('est_admin') || E.token() }).then((d) => {
+        const box = $('#planBox');
+        if (!box || !d.siteplan) return;
+        window.SitePlan.viewer(box, d, {
+          unit: l.size_unit || 'sqm',
+          onChange: (chosen) => {
+            const ask = $('#planAsk');
+            if (!ask) return;
+            if (!chosen.length) { ask.innerHTML = ''; return; }
+            const nums = chosen.map((p) => p.number).join(', ');
+            const msg = encodeURIComponent(`Habari, nimeona "${l.title}" kwenye 88EST (${location.origin}/l/${l.id}). Naulizia kiwanja/viwanja namba: ${nums}. Bado vinapatikana?`);
+            ask.innerHTML = `<a class="wa-btn mt" style="width:100%;justify-content:center" href="https://wa.me/${esc(s.whatsapp)}?text=${msg}" target="_blank" rel="noopener" data-lead="wa"><i class="ti ti-brand-whatsapp"></i> Ulizia ${chosen.length === 1 ? 'kiwanja ' + esc(nums) : 'viwanja ' + chosen.length}</a>`;
+          },
+        });
+      }).catch(() => { const box = $('#planBox'); if (box) box.innerHTML = '<p class="small muted">Mchoro haukufunguka.</p>'; });
+    }
     $('#share').onclick = () => share(l.title, location.origin + '/l/' + l.id);
     $('#report').onclick = () => reportModal(l.id);
 

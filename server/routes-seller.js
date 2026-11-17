@@ -354,6 +354,82 @@ module.exports = function (app) {
     res.json({ ok: true });
   });
 
+  // ===== Mchoro wa viwanja (site plan) =====
+  async function ownPlanListing(req) {
+    const l = await db.one('SELECT * FROM listings WHERE id = $1 AND user_id = $2', [U.int(req.params.id, 1), req.user.id]);
+    if (!l) throw httpError(404, 'Tangazo halipatikani');
+    U.need(U.PLAN_CATEGORIES.includes(l.category), 'Mchoro wa viwanja ni kwa viwanja, mashamba na miradi tu');
+    return l;
+  }
+  const plotRow = (p) => ({ ...p, size: p.size == null ? null : Number(p.size), price: p.price == null ? null : Number(p.price) });
+
+  app.get('/api/my/listings/:id/plan', requireAuth, async (req, res) => {
+    const l = await ownPlanListing(req);
+    const plots = await db.q('SELECT id, number, size, price, status, points FROM plots WHERE listing_id = $1 ORDER BY sort, id', [l.id]);
+    res.json({ listing: { id: l.id, title: l.title, category: l.category, size_unit: l.size_unit }, siteplan: l.siteplan, plots: plots.map(plotRow) });
+  });
+
+  // Kuhifadhi mchoro wote (picha + viwanja vyote) kwa mara moja
+  app.put('/api/my/listings/:id/plan', requireAuth, async (req, res) => {
+    const l = await ownPlanListing(req);
+    let plan = null;
+    const sp = req.body.siteplan;
+    if (sp && sp.image) {
+      const img = U.int(sp.image, 1);
+      const own = await db.one('SELECT id FROM images WHERE id = $1 AND owner_id = $2 AND private = false', [img, req.user.id]);
+      U.need(own, 'Picha ya mchoro haikupakiwa vizuri. Jaribu tena.');
+      plan = { image: img, w: U.int(sp.w, 1, 20000) || 1000, h: U.int(sp.h, 1, 20000) || 1000 };
+    }
+    const list = Array.isArray(req.body.plots) ? req.body.plots : [];
+    U.need(list.length <= 2000, 'Viwanja vingi mno (mwisho 2000)');
+    U.need(plan || !list.length, 'Weka picha ya mchoro kwanza');
+    const seen = new Set();
+    const clean = list.map((p, i) => {
+      const number = U.str(p.number, 30);
+      U.need(number, 'Kila kiwanja kiwe na namba');
+      U.need(!seen.has(number.toLowerCase()), 'Namba ya kiwanja imejirudia: ' + number);
+      seen.add(number.toLowerCase());
+      const pts = Array.isArray(p.points) ? p.points : [];
+      U.need(pts.length >= 3 && pts.length <= 60, 'Kiwanja ' + number + ': chora angalau pembe 3');
+      const points = pts.map((pt) => [Math.min(1, Math.max(0, Number(pt[0]))), Math.min(1, Math.max(0, Number(pt[1])))]);
+      U.need(points.every((pt) => Number.isFinite(pt[0]) && Number.isFinite(pt[1])), 'Kiwanja ' + number + ': alama si sahihi');
+      return {
+        number, points: JSON.stringify(points.map((pt) => [Math.round(pt[0] * 1e5) / 1e5, Math.round(pt[1] * 1e5) / 1e5])),
+        size: U.num(p.size), price: U.int(p.price, 0, 1e13), status: U.PLOT_STATUS.includes(p.status) ? p.status : 'available', sort: i,
+      };
+    });
+    await db.q('UPDATE listings SET siteplan = $1::jsonb, updated_at = now() WHERE id = $2', [plan ? JSON.stringify(plan) : null, l.id]);
+    await db.q('DELETE FROM plots WHERE listing_id = $1', [l.id]);
+    // Kuingiza kwa mafungu ili kuwa haraka
+    for (let i = 0; i < clean.length; i += 200) {
+      const chunk = clean.slice(i, i + 200);
+      const vals = [];
+      const ph = chunk.map((p, j) => {
+        vals.push(l.id, p.number, p.size, p.price, p.status, p.points, p.sort);
+        const b = j * 7;
+        return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6}::jsonb, $${b + 7})`;
+      });
+      await db.q(`INSERT INTO plots(listing_id, number, size, price, status, points, sort) VALUES ${ph.join(', ')}`, vals);
+    }
+    if (U.PLAN_CATEGORIES.includes(l.category) && clean.length) {
+      // Idadi ya units kwenye tangazo inafuata mchoro
+      const avail = clean.filter((p) => p.status === 'available').length;
+      await db.q('UPDATE listings SET units_total = $1, units_available = $2 WHERE id = $3', [clean.length, avail, l.id]);
+    }
+    const plots = await db.q('SELECT id, number, size, price, status, points FROM plots WHERE listing_id = $1 ORDER BY sort, id', [l.id]);
+    res.json({ siteplan: plan, plots: plots.map(plotRow) });
+  });
+
+  // Kubadilisha hali ya kiwanja kimoja haraka (kinapatikana / kimeshikiliwa / kimeuzwa)
+  app.post('/api/my/plots/:pid/status', requireAuth, async (req, res) => {
+    U.need(U.PLOT_STATUS.includes(req.body.status), 'Hali si sahihi');
+    const p = await db.one('SELECT p.id, p.listing_id FROM plots p JOIN listings l ON l.id = p.listing_id WHERE p.id = $1 AND l.user_id = $2', [U.int(req.params.pid, 1), req.user.id]);
+    if (!p) throw httpError(404, 'Kiwanja hakipatikani');
+    await db.q('UPDATE plots SET status = $1, updated_at = now() WHERE id = $2', [req.body.status, p.id]);
+    await db.q("UPDATE listings SET units_available = (SELECT count(*) FROM plots WHERE listing_id = $1 AND status = 'available') WHERE id = $1", [p.listing_id]);
+    res.json({ ok: true });
+  });
+
   // ===== Takwimu =====
   app.get('/api/my/stats', requireAuth, async (req, res) => {
     const r = await db.one(

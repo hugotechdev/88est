@@ -6,6 +6,8 @@ const DEALS = ['rent', 'sale', 'short'];
 const PERIODS = ['month', 'year', 'night', 'day', 'total'];
 const ACCOUNT_TYPES = ['agent', 'developer', 'owner'];
 const AMENITIES = ['maji', 'luku_binafsi', 'luku_pamoja', 'uzio', 'geti', 'parking', 'ulinzi', 'cctv', 'fenicha', 'ac', 'wifi', 'jiko_ndani', 'choo_ndani', 'tiles', 'gypsum', 'solar', 'generator', 'lift', 'bwawa', 'gym', 'barabara_lami', 'karibu_barabara', 'bustani', 'stoo'];
+const PLAN_CATEGORIES = ['kiwanja', 'shamba', 'mradi'];
+const PLOT_STATUS = ['available', 'reserved', 'sold'];
 const REPORT_REASONS = ['utapeli', 'picha_si_halisi', 'bei_si_sahihi', 'imeshachukuliwa', 'mawasiliano_hayapatikani', 'nyingine'];
 
 // Inabadilisha 0712345678 / +255712345678 / 712345678 kuwa 255712345678
@@ -206,7 +208,7 @@ function esc(s) {
 }
 
 module.exports = {
-  CATEGORIES, DEALS, PERIODS, ACCOUNT_TYPES, AMENITIES, REPORT_REASONS, TERMS_VERSION,
+  CATEGORIES, DEALS, PERIODS, ACCOUNT_TYPES, AMENITIES, REPORT_REASONS, TERMS_VERSION, PLAN_CATEGORIES, PLOT_STATUS,
   normPhone, slugify, uniqueSlug, str, int, num, bool, need, isEmail, isPro, isAdmin,
   publicSeller, selfUser, sendEmail, rateLimit, clientIp, esc, verifyCaptcha,
 };
